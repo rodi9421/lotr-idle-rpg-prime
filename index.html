@@ -1,0 +1,2276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>L'Ascension de l'Ombre — Idle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;900&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ============ THEME TOKENS ============ */
+:root {
+  --bg: #0c0a08;
+  --bg-parchment: linear-gradient(to bottom, #1a1612, #0f0d0b);
+  --panel: #1e1814;
+  --panel2: #14100c;
+  --line: rgba(212, 175, 55, 0.3);
+  --line2: rgba(212, 175, 55, 0.6);
+  --gold: #d4af37;
+  --gold-bright: #f9df8a;
+  --teal: #5a9e8f;
+  --teal-soft: #8ecfc0;
+  --text: #e6dac3;
+  --muted: #a3947c;
+  --danger: #b22222;
+  --good: #5a9e8f;
+  --hp: #4b8b3b;
+  --hp2: #2d5a21;
+  --xp: #4a7599;
+  --shadow: 0 8px 30px rgba(0,0,0,.8);
+  --glow: rgba(212, 175, 55, 0.35);
+}
+body.nazgul {
+  --bg: #050505;
+  --bg-parchment: linear-gradient(to bottom, #110000, #000000);
+  --panel: #1a0505;
+  --panel2: #0f0000;
+  --line: rgba(180, 40, 40, 0.4);
+  --line2: rgba(220, 50, 50, 0.7);
+  --gold: #c23b3b;
+  --gold-bright: #e86464;
+  --text: #d4b8b8;
+  --muted: #8a6363;
+  --glow: rgba(200, 40, 40, 0.5);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  background-image: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.6) 100%);
+  color: var(--text);
+  font-family: 'Spectral', Georgia, serif;
+  overflow: hidden;
+  transition: background 0.8s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+h1, h2, h3, .cinzel, .btn, .tabbtn, .statval, .bignum { font-family: 'Cinzel', serif; }
+#bgcanvas { position: fixed; inset: 0; z-index: 0; display: block; opacity: 0.1; }
+#particles { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+#flash { position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0; background: #fff; transition: opacity .12s; }
+
+/* ============ LAYOUT ============ */
+#app { position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column; max-width: 1180px; margin: 0 auto; }
+
+/* Top bar */
+#topbar {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  background: var(--bg-parchment);
+  border-bottom: 2px ridge var(--line);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  flex-wrap: wrap;
+}
+#gametitle { font-size: 18px; letter-spacing: 1px; color: var(--gold-bright); text-shadow: 0 0 10px var(--glow); font-weight: 700; }
+.res { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel2); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); white-space: nowrap; }
+.res .val { font-family: 'Cinzel'; font-weight: 600; color: var(--gold-bright); }
+.res.essence .val { color: var(--teal-soft); }
+.res.legacy .val { color: #c9a0ff; }
+.spacer { flex: 1; }
+
+/* Buy amount controls */
+#buyControls { display: flex; align-items: center; gap: 6px; }
+.buy-mode-btn { cursor: pointer; border: 1px solid var(--line); background: var(--panel2); color: var(--muted); border-radius: 3px; padding: 5px 10px; font-size: 12px; font-family: 'Cinzel'; font-weight: bold; transition: 0.2s; }
+.buy-mode-btn:hover, .buy-mode-btn.active { border-color: var(--gold); color: var(--gold-bright); text-shadow: 0 0 5px var(--glow); background: rgba(212,175,55,0.1); }
+#buyCustomInput { width: 60px; background: var(--panel2); border: 1px solid var(--line); border-radius: 3px; padding: 5px 6px; color: var(--gold-bright); font-family: 'Cinzel'; font-size: 12px; text-align: center; }
+#buyCustomInput:focus { outline: none; border-color: var(--gold); }
+
+.control-btn { cursor: pointer; border: 1px solid var(--line); background: var(--panel2); color: var(--text); border-radius: 4px; padding: 6px 12px; font-size: 13px; font-family: 'Cinzel'; font-weight: bold; transition: 0.2s; }
+.control-btn:hover { border-color: var(--gold); text-shadow: 0 0 5px var(--glow); }
+
+/* Hero header */
+#heroband { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: rgba(20, 15, 10, 0.8); flex-wrap: wrap; }
+#heroname { font-family: 'Cinzel'; font-weight: 700; font-size: 18px; color: var(--gold-bright); text-shadow: 0 0 5px #000; }
+.htag { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 3px 8px; background: rgba(0,0,0,0.3); }
+.htag.ps { color: var(--teal-soft); border-color: var(--teal); }
+.barwrap { flex: 1; min-width: 200px; }
+.barlabel { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 4px; letter-spacing: 1px; font-family: 'Cinzel'; }
+.bar { height: 16px; border-radius: 3px; background: #000; overflow: hidden; position: relative; border: 1px solid var(--line); box-shadow: inset 0 0 8px rgba(0,0,0,0.8); }
+.bar > i { display: block; height: 100%; width: 0; transition: width .25s ease; }
+.bar.xp > i { background: linear-gradient(90deg, #1c3d5a, var(--xp)); }
+.shimmer::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.2) 50%, transparent 70%); transform: translateX(-100%); animation: shim 2.4s linear infinite; }
+@keyframes shim { to { transform: translateX(100%); } }
+
+/* Tabs */
+#tabs { display: flex; gap: 6px; padding: 10px 16px 0; overflow-x: auto; background: var(--bg-parchment); scrollbar-width: none; border-bottom: 2px solid var(--line); }
+#tabs::-webkit-scrollbar { display: none; }
+.tabbtn { flex: 0 0 auto; cursor: pointer; border: 1px solid var(--line); border-bottom: none; background: var(--panel2); color: var(--muted); padding: 10px 20px; border-radius: 6px 6px 0 0; font-size: 14px; font-weight: 700; position: relative; transition: .2s; }
+.tabbtn:hover { color: var(--gold-bright); background: var(--panel); }
+.tabbtn.active { background: var(--panel); color: var(--gold-bright); border-color: var(--gold); border-width: 2px; border-bottom: 2px solid var(--panel); margin-bottom: -2px; text-shadow: 0 0 8px var(--glow); }
+
+/* Content */
+#content { flex: 1; overflow-y: auto; padding: 20px; scrollbar-width: thin; scrollbar-color: var(--gold) #000; }
+.panel { display: none; }
+.panel.active { display: block; animation: fadein .35s ease; }
+@keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.card { background: var(--bg-parchment); border: 2px ridge var(--line); border-radius: 6px; padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.5; }
+.card h3 { font-size: 18px; letter-spacing: 2px; color: var(--gold-bright); margin-bottom: 14px; text-shadow: 0 2px 4px #000; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.sub { color: var(--muted); font-size: 14px; margin-bottom: 14px; line-height: 1.5; font-style: italic; }
+
+/* Grids */
+.grid { display: grid; gap: 12px; }
+.g1 { grid-template-columns: 1fr; }
+.g2 { grid-template-columns: repeat(2, 1fr); }
+.g3 { grid-template-columns: repeat(3, 1fr); }
+.g4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Stat boxes */
+.statbox { background: rgba(0,0,0,0.4); border: 1px solid var(--line); border-radius: 4px; padding: 14px; text-align: center; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); }
+.statbox .lab { font-size: 12px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.statbox .statval { font-size: 26px; color: var(--gold-bright); font-weight: 700; margin-top: 6px; text-shadow: 0 0 8px var(--glow); }
+
+/* Buttons */
+.btn { cursor: pointer; border: 2px solid var(--line2); background: linear-gradient(180deg, #33281b, #1a140e); color: var(--gold-bright); border-radius: 4px; padding: 12px 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; transition: .2s; width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.6); font-family: 'Cinzel'; }
+.btn:hover { background: linear-gradient(180deg, #443524, #2b2117); border-color: var(--gold); box-shadow: 0 0 15px var(--glow); transform: translateY(-1px); }
+.btn:active { transform: translateY(2px); box-shadow: none; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); box-shadow: none; border-color: var(--line); color: var(--muted); }
+.btn.small { padding: 8px 12px; font-size: 12px; }
+
+/* Buy rows */
+.buyrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--line); border-radius: 6px; padding: 12px 16px; margin-bottom: 10px; transition: 0.2s; }
+.buyrow:hover { background: rgba(212, 175, 55, 0.05); border-color: var(--line2); }
+.buyrow .info { flex: 1; min-width: 0; }
+.buyrow .nm { font-family: 'Cinzel'; font-weight: 700; font-size: 15px; color: var(--text); text-shadow: 0 1px 2px #000; }
+.buyrow .ds { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+.buyrow .lvl { font-size: 12px; color: var(--teal-soft); margin-top: 4px; font-family: 'Cinzel'; }
+.buyrow .act { flex: 0 0 auto; width: 170px; }
+
+/* Gold tier separator bands */
+.gold-tier-header {
+  display: flex; align-items: center; gap: 12px;
+  margin: 20px 0 10px;
+  font-family: 'Cinzel'; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+}
+.gold-tier-header::before, .gold-tier-header::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.tier-early { color: #7aad7a; --tier-c: #4a8a4a; }
+.tier-mid   { color: #5fa8e0; --tier-c: #2a6090; }
+.tier-late  { color: #b06fe0; --tier-c: #6a3a90; }
+.tier-end   { color: #e8c170; --tier-c: #9a7a30; }
+
+/* Combat */
+.combatface { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+.fighter { text-align: center; flex: 1; }
+.fighter .av { font-size: 54px; filter: drop-shadow(0 0 15px var(--glow)); margin-bottom: 8px; }
+.fighter .nm { font-family: 'Cinzel'; font-size: 16px; color: var(--gold-bright); text-shadow: 0 2px 4px #000; margin-bottom: 8px; }
+.vs { font-family: 'Cinzel'; color: var(--danger); font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(178,34,34,0.8); }
+.enemyhp > i { background: linear-gradient(90deg, #5c1e1e, var(--danger)); }
+.herohp > i { background: linear-gradient(90deg, var(--hp2), var(--hp)); }
+
+/* Equipment / Drops */
+.slot { background: rgba(0,0,0,0.4); border: 1px solid var(--line); border-radius: 6px; padding: 14px; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.6); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; transition: 0.3s; }
+.slot .icon { font-size: 32px; margin-bottom: 8px; filter: drop-shadow(0 0 8px rgba(255,255,255,0.2)); }
+.slot .sname { font-family: 'Cinzel'; font-size: 15px; color: var(--text); margin-bottom: 4px; }
+.slot .rar { font-size: 12px; font-weight: bold; letter-spacing: 1px; font-family: 'Cinzel'; margin-bottom: 4px; text-transform: uppercase; }
+.slot .stat { font-size: 13px; color: var(--gold-bright); }
+.slot .equip-name { font-size: 13px; color: var(--text); margin: 3px 0; font-style: italic; }
+
+/* Rarity colors */
+.r-common   { color: #b9c2d0; text-shadow: 0 0 5px rgba(185,194,208,0.5); }
+.r-uncommon { color: #6fd17a; text-shadow: 0 0 5px rgba(111,209,122,0.5); }
+.r-rare     { color: #5fa8e0; text-shadow: 0 0 5px rgba(95,168,224,0.5); }
+.r-epic     { color: #b06fe0; text-shadow: 0 0 5px rgba(176,111,224,0.5); }
+.r-legendary{ color: #e8c170; text-shadow: 0 0 8px rgba(232,193,112,0.8); }
+.r-mythic   { color: #ff6b88; text-shadow: 0 0 10px rgba(255,107,136,0.9); animation: mythicPulse 2s ease-in-out infinite; }
+@keyframes mythicPulse { 0%,100%{ text-shadow: 0 0 8px rgba(255,107,136,0.8); } 50%{ text-shadow: 0 0 20px rgba(255,107,136,1), 0 0 40px rgba(255,107,136,0.5); } }
+
+/* Drop animation overlay */
+@keyframes dropIn { 0%{opacity:0;transform:scale(0.5) translateY(-20px)} 60%{transform:scale(1.1) translateY(5px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
+.slot.drop-animate { animation: dropIn 0.5s ease-out; }
+
+/* Drop log */
+#droplog { margin-top: 10px; height: 120px; overflow-y: auto; background: rgba(0,0,0,0.5); border: 1px solid var(--line); border-radius: 4px; padding: 8px; font-size: 13px; color: var(--muted); scrollbar-width: none; }
+#droplog div { margin-bottom: 4px; animation: fadein 0.3s; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+
+/* Legacy */
+.legacy-locked { opacity: 0.5; filter: grayscale(0.5); }
+.legacy-reward-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-family: 'Cinzel'; font-size: 11px; font-weight: bold; margin: 3px 2px; }
+.legacy-tier-1 { background: rgba(130,180,130,0.2); border: 1px solid #4a8a4a; color: #7aad7a; }
+.legacy-tier-2 { background: rgba(95,168,224,0.2); border: 1px solid #2a6090; color: #5fa8e0; }
+.legacy-tier-3 { background: rgba(176,111,224,0.2); border: 1px solid #6a3a90; color: #b06fe0; }
+.legacy-tier-4 { background: rgba(232,193,112,0.2); border: 1px solid #9a7a30; color: #e8c170; }
+.legacy-tier-5 { background: rgba(255,107,136,0.2); border: 1px solid #a03050; color: #ff6b88; }
+
+/* Legacy preview bar */
+.legacy-preview { margin: 14px 0; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid rgba(200,160,255,0.3); border-radius: 6px; }
+.legacy-preview h4 { font-family: 'Cinzel'; color: #c9a0ff; font-size: 14px; margin-bottom: 8px; }
+.legacy-milestones { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+/* Start screen */
+#start { position: fixed; inset: 0; z-index: 80; background: radial-gradient(circle at center, #261f18 0%, #000 100%); display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+#start .inner { max-width: 700px; width: 100%; text-align: center; background: rgba(15, 12, 10, 0.9); padding: 40px; border: 2px ridge var(--gold); border-radius: 8px; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
+#start h1 { font-size: 36px; color: var(--gold-bright); text-shadow: 0 0 20px var(--glow), 0 5px 10px #000; letter-spacing: 3px; margin-bottom: 10px; }
+#start .tag { color: var(--muted); font-style: italic; margin-bottom: 30px; font-size: 16px; }
+#start .step { font-size: 14px; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; margin: 24px 0 12px; border-bottom: 1px solid var(--line); padding-bottom: 5px; display: inline-block;}
+.choice { cursor: pointer; border: 1px solid var(--line); background: rgba(0,0,0,0.5); border-radius: 4px; padding: 16px; text-align: left; transition: .2s; }
+.choice:hover { border-color: var(--gold-bright); box-shadow: inset 0 0 15px rgba(212,175,55,0.2); }
+.choice.sel { border-color: var(--gold); box-shadow: 0 0 15px var(--glow) inset; background: rgba(212, 175, 55, 0.1); }
+.choice .ct { font-family: 'Cinzel'; font-weight: bold; font-size: 16px; color: var(--gold-bright); display: flex; align-items: center; gap: 10px; }
+.choice .cd { font-size: 13px; color: var(--text); margin-top: 6px; line-height: 1.5; }
+#start input { width: 100%; max-width: 300px; background: rgba(0,0,0,0.6); border: 1px solid var(--gold); border-radius: 4px; padding: 12px; color: var(--gold-bright); font-family: 'Cinzel'; font-size: 18px; text-align: center; margin: 10px auto; display: block; box-shadow: inset 0 0 10px #000; }
+#start input:focus { outline: none; border-color: #fff; box-shadow: 0 0 15px var(--glow); }
+
+/* Floating combat text & Toasts */
+.float { position: fixed; z-index: 50; font-family: 'Cinzel'; font-weight: 900; font-size: 20px; pointer-events: none; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 0 0 10px rgba(0,0,0,0.8); animation: floatup 1s ease-out forwards; }
+@keyframes floatup { 0%{opacity:1;transform:translateY(0) scale(0.8)} 20%{transform:translateY(-10px) scale(1.2)} 100%{opacity:0;transform:translateY(-60px) scale(1)} }
+#toasts { position: fixed; top: 80px; right: 20px; z-index: 70; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; pointer-events: none; }
+.toast { background: var(--bg-parchment); border: 1px solid var(--gold); border-radius: 4px; padding: 12px 20px; font-size: 14px; font-family: 'Cinzel'; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.8); animation: toastin 0.4s ease, toastout 0.4s ease 3s forwards; color: var(--gold-bright); }
+.toast.drop { border-color: #ff6b88; color: #ff6b88; }
+.toast.legendary-drop { border-color: #e8c170; color: #e8c170; text-shadow: 0 0 10px rgba(232,193,112,0.8); }
+@keyframes toastin { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:none} }
+@keyframes toastout { to{opacity:0;transform:translateX(20px)} }
+
+/* Karma/Corruption */
+.karmabar { height: 12px; border-radius: 2px; overflow: hidden; background: #000; border: 1px solid var(--line); position: relative; margin: 8px 0; }
+.karmabar > i { position: absolute; top: 0; bottom: 0; width: 4px; background: #fff; box-shadow: 0 0 10px #fff; transition: left .3s; }
+.corrbar > i { background: linear-gradient(90deg, #5a2a7a, #9d62d6, #d94f63); box-shadow: 0 0 10px var(--danger); width: 100%; transform-origin: left;}
+
+/* ============ COMBAT ANIMATIONS ============ */
+.fighter .av { transition: filter .15s; will-change: transform, filter; }
+
+.fighter.attack-anim .av { animation: heroAttackAnim .35s ease; }
+@keyframes heroAttackAnim {
+  0%   { transform: translateX(0) rotate(0) scale(1); }
+  30%  { transform: translateX(28px) rotate(-18deg) scale(1.18); filter: drop-shadow(0 0 18px var(--gold-bright)); }
+  55%  { transform: translateX(-6px) rotate(6deg) scale(1.05); }
+  100% { transform: translateX(0) rotate(0) scale(1); }
+}
+
+.fighter.hit-shake .av { animation: enemyHitAnim .32s ease; }
+@keyframes enemyHitAnim {
+  0%   { transform: translateX(0); filter: brightness(1) drop-shadow(0 0 15px var(--glow)); }
+  15%  { transform: translateX(-10px) scale(0.96); filter: brightness(2.6) drop-shadow(0 0 25px var(--danger)) saturate(2); }
+  35%  { transform: translateX(9px) scale(1.02); filter: brightness(2) drop-shadow(0 0 18px var(--danger)); }
+  55%  { transform: translateX(-5px); }
+  75%  { transform: translateX(4px); }
+  100% { transform: translateX(0); filter: brightness(1) drop-shadow(0 0 15px var(--glow)); }
+}
+
+.fighter.crit-shake .av { animation: critHitAnim .4s ease; }
+@keyframes critHitAnim {
+  0%   { transform: translateX(0) scale(1); filter: brightness(1) drop-shadow(0 0 15px var(--glow)); }
+  10%  { transform: translateX(-16px) scale(0.9) rotate(-8deg); filter: brightness(3.5) drop-shadow(0 0 35px #ff6b88) saturate(3); }
+  30%  { transform: translateX(14px) scale(1.12) rotate(6deg); filter: brightness(2.5) drop-shadow(0 0 30px #ff6b88); }
+  50%  { transform: translateX(-8px) scale(1.04); }
+  70%  { transform: translateX(6px); }
+  100% { transform: translateX(0) scale(1); filter: brightness(1) drop-shadow(0 0 15px var(--glow)); }
+}
+
+.fighter.death-anim .av { animation: enemyDeathAnim .55s ease forwards; }
+@keyframes enemyDeathAnim {
+  0%   { transform: scale(1) rotate(0); opacity: 1; filter: brightness(1) drop-shadow(0 0 15px var(--glow)); }
+  35%  { transform: scale(1.25) rotate(12deg); opacity: 1; filter: brightness(4) drop-shadow(0 0 30px #fff) saturate(0); }
+  100% { transform: scale(0.15) rotate(130deg) translateY(20px); opacity: 0; filter: brightness(4) saturate(0); }
+}
+
+.fighter.spawn-anim .av { animation: enemySpawnAnim .45s ease; }
+@keyframes enemySpawnAnim {
+  0%   { transform: scale(0) rotate(-40deg); opacity: 0; filter: brightness(3) drop-shadow(0 0 25px var(--danger)); }
+  65%  { transform: scale(1.18) rotate(8deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; filter: brightness(1) drop-shadow(0 0 15px var(--glow)); }
+}
+
+/* Weapon slash effect */
+.combatface { position: relative; }
+.slash {
+  position: absolute; top: 50%; left: 50%; width: 140px; height: 8px;
+  margin: -4px 0 0 -70px;
+  background: linear-gradient(90deg, transparent, #fff 35%, var(--gold-bright) 60%, transparent);
+  border-radius: 4px; box-shadow: 0 0 16px var(--gold-bright), 0 0 30px var(--gold-bright);
+  opacity: 0; pointer-events: none; z-index: 16;
+  transform: rotate(-35deg) scaleX(0);
+  transform-origin: left center;
+}
+.slash.go { animation: slashGoAnim .28s ease-out; }
+@keyframes slashGoAnim {
+  0%   { opacity: 0; transform: rotate(-35deg) scaleX(0); }
+  25%  { opacity: 1; transform: rotate(-35deg) scaleX(1); }
+  60%  { opacity: 1; transform: rotate(-35deg) scaleX(1.3); }
+  100% { opacity: 0; transform: rotate(-35deg) scaleX(1.35); }
+}
+.slash.crit { background: linear-gradient(90deg, transparent, #fff 30%, #ff6b88 55%, transparent); box-shadow: 0 0 22px #ff6b88, 0 0 40px #ff6b88; height: 11px; }
+
+/* Screen shake (on big hits / crits) */
+#app.screen-shake { animation: screenShakeAnim .3s ease; }
+@keyframes screenShakeAnim {
+  0%,100% { transform: translate(0,0); }
+  20% { transform: translate(-6px,3px); }
+  40% { transform: translate(6px,-3px); }
+  60% { transform: translate(-4px,2px); }
+  80% { transform: translate(4px,-1px); }
+}
+
+/* Critical floating text */
+.float.crit { color: #ff6b88; font-size: 30px; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 0 0 16px #ff6b88, 0 0 30px #ff6b88; animation: floatupCrit 1.1s ease-out forwards; }
+@keyframes floatupCrit {
+  0%   { opacity:1; transform: translateY(0) scale(0.6) rotate(-6deg); }
+  18%  { transform: translateY(-14px) scale(1.4) rotate(4deg); }
+  100% { opacity:0; transform: translateY(-70px) scale(1.1) rotate(0); }
+}
+
+/* Level up effects */
+.levelup-burst {
+  position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  background: radial-gradient(circle, var(--glow) 0%, transparent 60%);
+  opacity: 0;
+}
+.levelup-burst.go { animation: radialBurstAnim 1s ease-out forwards; }
+@keyframes radialBurstAnim {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.levelup-banner {
+  position: fixed; top: 38%; left: 50%; transform: translate(-50%,-50%) scale(0.4);
+  font-family: 'Cinzel', serif; font-size: 42px; font-weight: 900; letter-spacing: 4px;
+  color: var(--gold-bright); text-shadow: 0 0 25px var(--glow), 0 4px 10px #000;
+  z-index: 65; pointer-events: none; opacity: 0; white-space: nowrap; text-align: center;
+}
+.levelup-banner.go { animation: levelBannerAnim 1.8s ease-out forwards; }
+@keyframes levelBannerAnim {
+  0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.3) rotate(-8deg); }
+  18%  { opacity: 1; transform: translate(-50%,-50%) scale(1.2) rotate(2deg); }
+  35%  { opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(0); }
+  78%  { opacity: 1; transform: translate(-50%,-50%) scale(1) translateY(0); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1) translateY(-40px); }
+}
+
+/* Legendary/Mythic drop burst */
+.legendary-burst {
+  position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  background: radial-gradient(circle, rgba(232,193,112,0.55) 0%, transparent 65%);
+  opacity: 0;
+}
+.legendary-burst.go { animation: radialBurstAnim 1.2s ease-out forwards; }
+.legendary-burst.mythic { background: radial-gradient(circle, rgba(255,107,136,0.6) 0%, transparent 65%); }
+
+/* Audio toggle buttons */
+.control-btn.muted { opacity: 0.5; filter: grayscale(1); border-color: var(--muted); }
+
+/* ============ KARMA / CORRUPTION BARS (heroband) ============ */
+.kc-wrap { display: flex; flex-direction: column; gap: 6px; min-width: 180px; }
+.kc-row { display: flex; align-items: center; gap: 8px; }
+.kc-label { font-size: 11px; font-family: 'Cinzel'; letter-spacing: 1px; color: var(--muted); width: 80px; text-transform: uppercase; }
+.kc-bar { flex: 1; height: 10px; border-radius: 2px; background: #000; border: 1px solid var(--line); position: relative; overflow: hidden; }
+.kc-bar.karma > i { display:block; height:100%; background: linear-gradient(90deg, #b22222, #8a6363, #5a9e8f); width: 50%; transition: width .4s; }
+.kc-bar.karma > .marker { position:absolute; top:-1px; bottom:-1px; left:50%; width:2px; background:#fff; box-shadow:0 0 6px #fff; }
+.kc-bar.corr > i { display:block; height:100%; background: linear-gradient(90deg, #5a2a7a, #9d62d6, #d94f63); width: 0%; transition: width .4s; box-shadow: 0 0 8px rgba(217,79,99,0.6); }
+.kc-val { font-size: 11px; font-family:'Cinzel'; color: var(--muted); width: 40px; text-align: right; }
+
+/* ============ AUDIO PANEL ============ */
+.audio-slider-row { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.audio-slider-row label { width: 140px; font-family:'Cinzel'; font-size:13px; color: var(--text); }
+.audio-slider-row input[type=range] { flex:1; accent-color: var(--gold); }
+.audio-slider-row .pct { width:46px; text-align:right; font-family:'Cinzel'; color:var(--gold-bright); font-size:13px; }
+
+/* ============ BOSS ENCOUNTER ============ */
+.combatface.boss-face { border: 2px solid #e8c170; box-shadow: 0 0 25px rgba(232,193,112,0.45), inset 0 0 20px rgba(232,193,112,0.1); animation: bossPulse 2.4s ease-in-out infinite; }
+@keyframes bossPulse { 0%,100%{ box-shadow:0 0 25px rgba(232,193,112,0.45), inset 0 0 20px rgba(232,193,112,0.1);} 50%{ box-shadow:0 0 45px rgba(232,193,112,0.8), inset 0 0 30px rgba(232,193,112,0.2);} }
+.boss-tag { display:inline-block; font-family:'Cinzel'; font-size:12px; letter-spacing:2px; color:#e8c170; border:1px solid #e8c170; border-radius:3px; padding:3px 10px; margin-bottom:6px; text-shadow:0 0 8px rgba(232,193,112,0.8); text-transform:uppercase; animation: mythicPulse 2s ease-in-out infinite; }
+.combatface.boss-face .fighter:last-child .av { font-size: 72px; }
+
+/* ============ SPECIAL ATTACK FX ============ */
+.fighter.special-anim .av { animation: specialAttackAnim .5s ease; }
+@keyframes specialAttackAnim {
+  0%   { transform: scale(1) rotate(0); filter: brightness(1) drop-shadow(0 0 15px var(--glow)); }
+  25%  { transform: scale(1.3) rotate(-10deg); filter: brightness(2.5) drop-shadow(0 0 35px #5fa8e0) saturate(2); }
+  50%  { transform: scale(1.15) rotate(8deg); filter: brightness(2) drop-shadow(0 0 30px #5fa8e0); }
+  100% { transform: scale(1) rotate(0); filter: brightness(1) drop-shadow(0 0 15px var(--glow)); }
+}
+.fighter.special-hit .av { animation: specialHitAnim .5s ease; }
+@keyframes specialHitAnim {
+  0%   { transform: translateX(0) scale(1); filter: brightness(1); }
+  10%  { transform: translateX(-14px) scale(0.92); filter: brightness(3) drop-shadow(0 0 30px #5fa8e0) saturate(3) hue-rotate(40deg); }
+  35%  { transform: translateX(12px) scale(1.08) rotate(-4deg); filter: brightness(2.2) drop-shadow(0 0 25px #5fa8e0); }
+  60%  { transform: translateX(-6px); }
+  100% { transform: translateX(0) scale(1); filter: brightness(1); }
+}
+/* Spell beam effect overlay */
+.spellbeam {
+  position:absolute; top:50%; left:50%; width:160px; height:14px; margin:-7px 0 0 -80px;
+  border-radius:8px; opacity:0; pointer-events:none; z-index:17;
+  transform: rotate(-35deg) scaleX(0); transform-origin:left center;
+  background: linear-gradient(90deg, transparent, #aef0ff 30%, #5fa8e0 55%, transparent);
+  box-shadow: 0 0 20px #5fa8e0, 0 0 40px #5fa8e0;
+}
+.spellbeam.go { animation: spellBeamAnim .5s ease-out; }
+@keyframes spellBeamAnim {
+  0%   { opacity:0; transform: rotate(-35deg) scaleX(0); }
+  20%  { opacity:1; transform: rotate(-35deg) scaleX(1.1); }
+  70%  { opacity:1; transform: rotate(-35deg) scaleX(1.4); }
+  100% { opacity:0; transform: rotate(-35deg) scaleX(1.5); }
+}
+/* Special floating text */
+.float.special { color:#aef0ff; font-size:26px; text-shadow:2px 2px 0 #000,-1px -1px 0 #000,0 0 16px #5fa8e0,0 0 30px #5fa8e0; animation: floatupCrit 1.2s ease-out forwards; }
+
+/* ============ PASSIVES (Affinités) ============ */
+.passive-card { background: rgba(0,0,0,0.4); border:1px solid var(--line); border-radius:6px; padding:14px; margin-bottom:10px; }
+.passive-card .pname { font-family:'Cinzel'; font-weight:700; font-size:15px; }
+.passive-card .pdesc { font-size:13px; color: var(--muted); margin:6px 0; }
+
+/* ============ EVENT MODAL ============ */
+#eventModal { position:fixed; inset:0; z-index:90; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.75); padding:20px; }
+#eventModal.show { display:flex; }
+#eventModal .ebox { max-width:480px; width:100%; background: var(--bg-parchment); border:2px ridge var(--gold); border-radius:8px; padding:28px; text-align:center; box-shadow:0 0 50px rgba(0,0,0,0.9); animation: fadein .35s ease; }
+#eventModal h3 { color: var(--gold-bright); margin-bottom:12px; font-size:20px; text-shadow:0 0 10px var(--glow); }
+#eventModal p { color: var(--text); font-size:14px; line-height:1.6; margin-bottom:18px; }
+#eventModal .erewards { font-family:'Cinzel'; color: var(--teal-soft); font-size:14px; margin-bottom:14px; }
+
+/* ============ NAZGUL TRANSFORMATION ============ */
+body.nazgul #gametitle::before { content: '☠ '; }
+body.nazgul .fighter .av { filter: drop-shadow(0 0 18px var(--danger)) !important; }
+@keyframes nazgulShift { from{ filter: saturate(1) brightness(1); } to { filter: saturate(0.3) brightness(0.85) sepia(0.4) hue-rotate(-20deg); } }
+body.nazgul #app { animation: nazgulShift 2.5s ease forwards; }
+body.nazgul .cinzel, body.nazgul h1, body.nazgul h2, body.nazgul h3 { text-shadow: 0 0 12px rgba(200,40,40,0.6); }
+</style>
+</head>
+<body>
+
+<canvas id="bgcanvas"></canvas>
+<canvas id="particles"></canvas>
+<div id="flash"></div>
+
+<!-- ============ START SCREEN ============ -->
+<div id="start">
+  <div class="inner">
+    <h1>L'ASCENSION DE L'OMBRE</h1>
+    <div class="tag">Un héros forgé pour la lumière… ou consumé par les Ténèbres.</div>
+    <div class="step">I · Ton nom</div>
+    <input id="nameInput" maxlength="18" placeholder="Nomme ton héros" value="">
+    <div class="step">II · Ta race</div>
+    <div class="grid g2" id="raceGrid"></div>
+    <div class="step">III · Ta classe</div>
+    <div class="grid g2" id="classGrid"></div>
+    <button class="btn" id="beginBtn" disabled style="margin-top:30px; font-size:18px; padding:16px;">Entrer dans la Terre du Milieu</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" style="display:none">
+  <div id="topbar">
+    <span id="gametitle">⚔ L'Ascension de l'Ombre</span>
+    <div class="res gold"><span class="ico">🪙</span><span class="val" id="rGold">0</span></div>
+    <div class="res essence"><span class="ico">✦</span><span class="val" id="rEssence">0</span></div>
+    <div class="res"><span class="ico">🏆</span><span class="val" id="rGlory">0</span></div>
+    <div class="res legacy"><span class="ico">🜲</span><span class="val" id="rLegacy">0</span></div>
+    <span class="spacer"></span>
+    <!-- Buy controls -->
+    <div id="buyControls">
+      <span style="font-size:11px;font-family:Cinzel;color:var(--muted);letter-spacing:1px;">ACHETER:</span>
+      <button class="buy-mode-btn active" data-mode="1" onclick="setBuyMode(1)">×1</button>
+      <button class="buy-mode-btn" data-mode="10" onclick="setBuyMode(10)">×10</button>
+      <button class="buy-mode-btn" data-mode="100" onclick="setBuyMode(100)">×100</button>
+      <button class="buy-mode-btn" data-mode="-1" onclick="setBuyMode(-1)">MAX</button>
+      <input id="buyCustomInput" type="number" min="1" max="9999" placeholder="?" title="Quantité personnalisée" onchange="setCustomBuy(this.value)">
+    </div>
+    <button id="musicBtn" class="control-btn" onclick="toggleMusic()" title="Musique d'ambiance épique">🎺 Musique</button>
+    <button id="sfxBtn" class="control-btn" onclick="toggleSfx()" title="Effets sonores">🔔 Sons</button>
+    <button id="audioSettingsBtn" class="control-btn" onclick="switchTab('audio')" title="Paramètres audio">🎛 Audio</button>
+  </div>
+
+  <div id="heroband">
+    <div>
+      <div id="heroname">Héros</div>
+      <div style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap">
+        <span class="htag" id="tagRace">Race</span>
+        <span class="htag" id="tagClass">Classe</span>
+        <span class="htag ps" id="tagPS">Style</span>
+        <span class="htag" id="tagLvl">Niv. 1</span>
+      </div>
+    </div>
+    <div class="barwrap">
+      <div class="barlabel"><span id="xpLabel">Expérience</span><span id="xpText">0 / 0</span></div>
+      <div class="bar xp shimmer"><i id="xpBar"></i></div>
+    </div>
+    <div class="kc-wrap">
+      <div class="kc-row">
+        <span class="kc-label">Karma</span>
+        <div class="kc-bar karma"><i id="karmaBar"></i><span class="marker"></span></div>
+        <span class="kc-val" id="karmaVal">0</span>
+      </div>
+      <div class="kc-row">
+        <span class="kc-label">Corruption</span>
+        <div class="kc-bar corr"><i id="corrBar"></i></div>
+        <span class="kc-val" id="corrVal">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="tabs"></div>
+  <div id="content">
+    <div class="panel active" data-panel="combat" id="panel-combat"></div>
+    <div class="panel" data-panel="upgrades" id="panel-upgrades"></div>
+    <div class="panel" data-panel="income" id="panel-income"></div>
+    <div class="panel" data-panel="equipment" id="panel-equipment"></div>
+    <div class="panel" data-panel="passives" id="panel-passives"></div>
+    <div class="panel" data-panel="stats" id="panel-stats"></div>
+    <div class="panel" data-panel="legacy" id="panel-legacy"></div>
+    <div class="panel" data-panel="audio" id="panel-audio"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div id="eventModal"><div class="ebox" id="eventModalContent"></div></div>
+
+<script>
+"use strict";
+
+/* =============================================================
+   L'ASCENSION DE L'OMBRE - Epic Fantasy Idle Game
+   ============================================================= */
+
+/* ---------- BUY SYSTEM ---------- */
+let buyAmount = 1; // 1, 10, 100, -1 (MAX), or any custom int
+const BUY_PRESETS = [1, 10, 100, -1];
+
+function setBuyMode(mode) {
+  buyAmount = mode;
+  AudioEngine.playClick();
+  document.getElementById('buyCustomInput').value = '';
+  document.querySelectorAll('.buy-mode-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.mode) === mode);
+  });
+  let active = $('.tabbtn.active');
+  if(active) refreshTab(active.dataset.id);
+}
+function setCustomBuy(val) {
+  let n = parseInt(val);
+  if(isNaN(n) || n < 1) { document.getElementById('buyCustomInput').value=''; setBuyMode(1); return; }
+  buyAmount = n;
+  document.querySelectorAll('.buy-mode-btn').forEach(b => b.classList.remove('active'));
+  let active = $('.tabbtn.active');
+  if(active) refreshTab(active.dataset.id);
+}
+
+/* ---------- DATA ---------- */
+const RACES = {
+  hobbit:{name:'Hobbit',ico:'🌿',desc:'+20% Or, forte résistance à la corruption.',
+          goldMult:1.20,corruptionResist:0.5,idleMult:1,gloryMult:1,allMult:1,xpMult:1,posEvent:1},
+  elf:   {name:'Elfe',ico:'🏹',desc:'+15% XP, +10% chances d\'événements.',
+          goldMult:1,corruptionResist:1,idleMult:1,gloryMult:1,allMult:1,xpMult:1.15,posEvent:1.10},
+  dwarf: {name:'Nain',ico:'⛏',desc:'+30% revenu idle, chance de drop +15%.',
+          goldMult:1,corruptionResist:1,idleMult:1.30,gloryMult:1,allMult:1,xpMult:1,posEvent:1,dropMult:1.15},
+  man:   {name:'Homme',ico:'👑',desc:'+10% sur tout, +20% Gloire.',
+          goldMult:1.10,corruptionResist:1,idleMult:1.10,gloryMult:1.20,allMult:1.10,xpMult:1.10,posEvent:1},
+};
+const CLASSES = {
+  warrior: {name:'Guerrier',ico:'🛡',desc:'Force ×1.5 — dégâts bruts.',primary:'force',mult:1.5,atkSpeed:1,hpRegen:1},
+  ranger:  {name:'Rôdeur',ico:'🗡',desc:'Agilité ×1.5 + vitesse.',primary:'agility',mult:1.5,atkSpeed:1.3,hpRegen:1},
+  mage:    {name:'Mage',ico:'🔮',desc:'Sagesse ×1.5 + burst or.',primary:'wisdom',mult:1.5,atkSpeed:1,hpRegen:1},
+  guardian:{name:'Gardien',ico:'⚜',desc:'Courage ×1.5 + regen PV.',primary:'courage',mult:1.5,atkSpeed:1,hpRegen:2.5},
+};
+
+const PLAYSTYLES = [
+  {n:'Mercenaire',r:'Common',d:'+10% Or'},{n:'Éclaireur',r:'Common',d:'+8% vit. attaque'},
+  {n:'Robuste',r:'Common',d:'+15% PV max'},{n:'Studieux',r:'Common',d:'+12% XP'},
+  {n:'Cupide',r:'Common',d:'+12% Essence'},{n:'Brutal',r:'Uncommon',d:'+20% dégâts'},
+  {n:'Seigneur',r:'Rare',d:'+30% Gloire, +15% tout'},{n:'Élu',r:'Legendary',d:'+50% tout'}
+];
+
+const REGIONS = [
+  {n:'La Comté',lv:1},{n:'Le Vieux Bois',lv:8},{n:'Fondcombe',lv:18},
+  {n:'La Moria',lv:30},{n:'Lothlórien',lv:42},{n:'Rohan',lv:55},
+  {n:'Gondor',lv:70},{n:'Le Mordor',lv:85},{n:'La Montagne du Destin',lv:100},
+];
+const ENEMIES = [
+  {n:'Orque',ico:'👺'},{n:'Uruk-hai',ico:'🗡'},{n:'Warg',ico:'🐺'},
+  {n:'Troll',ico:'🗿'},{n:'Olog-hai',ico:'👹'},{n:'Spectre',ico:'💀'}
+];
+
+/* ---- EQUIPMENT SYSTEM ---- */
+const EQUIP_SLOTS = [
+  {id:'weapon', n:'Arme',   ico:'⚔', desc:'Booste les Dégâts bruts', bonus:'dmg'},
+  {id:'armor',  n:'Armure', ico:'🛡', desc:'Booste les PV Max',       bonus:'hp'},
+  {id:'helmet', n:'Casque', ico:'⛑', desc:'Booste le gain d\'XP',    bonus:'xp'},
+  {id:'boots',  n:'Bottes', ico:'🥾', desc:'Booste la Vitesse d\'atk',bonus:'spd'}
+];
+const EQUIP_TIERS = ['Commun','Peu Commun','Rare','Épique','Légendaire','Mythique'];
+const EQUIP_TIER_KEYS = ['common','uncommon','rare','epic','legendary','mythic'];
+const EQUIP_MULT = [1, 1.5, 3, 8, 25, 100];
+
+/* Named items per slot × rarity */
+const ITEM_NAMES = {
+  weapon: {
+    common:    ['Bâton Ébréché','Couteau Rouillé','Gourdin Noué','Épée de Paysant','Hache Émoussée'],
+    uncommon:  ['Lame du Soldat','Épée du Nord','Hache de Guerre','Lance Elfique','Dague Noire'],
+    rare:      ['Épée de Frodon','Lame de l\'Est','Glaive d\'Ithilien','Hache de Moria','Arc du Sylvain'],
+    epic:      ['Herugrim','Dague Brisée de Narsil','Glamdring l\'Elfique','Orcrist le Mord-Gobelin'],
+    legendary: ['Andúril — Flamme de l\'Occident','Sting — Aiguillon de la Comté','Anneau du Feu'],
+    mythic:    ['L\'Épée du Destin','Narsil Reforgée — Andúril Ultime','Le Bâton d\'Istari']
+  },
+  armor: {
+    common:    ['Tunique de Lin','Chemise Matelassée','Gilet de Cuir','Manteau Rapiécé','Cotte Usée'],
+    uncommon:  ['Cotte de Mailles','Armure de Cuir Durci','Haubert des Plaines','Armure d\'Éclaireur'],
+    rare:      ['Armure de Gondor','Cotte de Mithril Fin','Plastron d\'Ithilien','Armure du Gardien'],
+    epic:      ['Armure des Rohirrim','Haubert de Mithril','Armure du Roi de Gondor','Cotte d\'Elfes'],
+    legendary: ['Armure de Thorin','Cotte de Bilbon — Mithril Pur','Armure des Seigneurs du Destin'],
+    mythic:    ['L\'Armure d\'Eru Ilúvatar','Mithril Ultime des Dieux','Armure du Gardien Éternel']
+  },
+  helmet: {
+    common:    ['Capuche de Hobbit','Bonnet de Paille','Casque de Bois','Couvre-Chef Usé'],
+    uncommon:  ['Casque de Ranger','Heaume de Fer','Couvre-Chef Elfique','Casque du Soldat'],
+    rare:      ['Heaume de Gondor','Casque des Rohirrim','Coiffe d\'Imladris','Casque du Mage'],
+    epic:      ['Heaume de Boromir','Couronne d\'Ithilien','Casque du Roi de Rohan'],
+    legendary: ['Couronne d\'Aragorn','Heaume du Roi-Sorcier Retourné','Diadème des Elfes'],
+    mythic:    ['Couronne des Valar','Heaume du Destin Ultime','Tiare d\'Elbereth']
+  },
+  boots: {
+    common:    ['Sandales de Hobbit','Bottes de Cuir','Souliers Usés','Sabots de Bois'],
+    uncommon:  ['Bottes du Voyageur','Jambières Elfiques','Chausses du Rôdeur','Bottes de Guerre'],
+    rare:      ['Bottes de Mirkwood','Sandales d\'Imladris','Jambières des Rohirrim'],
+    epic:      ['Bottes de Legolas','Sandales d\'Arwen','Jambières du Capitaine de Gondor'],
+    legendary: ['Sandales Elfiques de Celeborn','Bottes du Marcheur des Âges','Jambières du Destin'],
+    mythic:    ['Bottes du Messager d\'Eru','Pas de l\'Ange Tombé','Sandales d\'Ilúvatar']
+  }
+};
+
+/* ---- UPGRADES (paliers Or séparés) ---- */
+// Early (1-500 Or), Mid (500-50K Or), Late (50K-5M Or), End (5M+ Or)
+const UPGRADES = [
+  // — PALIER PRÉCOCE (essence faible) —
+  {id:'h_blade',  n:'Lame de l\'Ouest',   d:'+8% dégâts / niv',    ico:'⚔', base:50,      g:1.15, eff:'dmg', v:0.08,  tier:'early'},
+  {id:'h_might',  n:'Entraînement',        d:'+4 Force / niv',       ico:'💪', base:80,      g:1.16, eff:'stat',stat:'force',v:4, tier:'early'},
+  {id:'h_gold',   n:'Avarice Naine',       d:'+10% Or / niv',        ico:'🪙', base:120,     g:1.17, eff:'gold', v:0.10, tier:'early'},
+  {id:'h_xp',     n:'Savoir Ancien',       d:'+8% XP / niv',         ico:'🌟', base:180,     g:1.18, eff:'xp',   v:0.08, tier:'early'},
+  // — PALIER INTERMÉDIAIRE (essence modérée) —
+  {id:'h_ess',    n:'Magie Elfique',       d:'+12% Essence / niv',   ico:'✦', base:500,     g:1.20, eff:'ess',  v:0.12, tier:'mid'},
+  {id:'h_speed',  n:'Célérité',            d:'+5% vit. attaque / niv',ico:'💨',base:800,     g:1.20, eff:'atk',  v:0.05, tier:'mid'},
+  {id:'h_hp',     n:'Sang de Númenor',     d:'+10% PV max / niv',    ico:'❤', base:1200,    g:1.18, eff:'hp',   v:0.10, tier:'mid'},
+  // — PALIER AVANCÉ —
+  {id:'h_wisdom', n:'Œil du Mage',         d:'+6% essence et dégâts',ico:'🔮',base:8000,    g:1.22, eff:'ess',  v:0.06, tier:'late'},
+  {id:'h_crit',   n:'Frappe Critique',     d:'+4% dégâts bruts / niv',ico:'🗡',base:12000,  g:1.24, eff:'dmg',  v:0.04, tier:'late'},
+  // — PALIER FINAL —
+  {id:'h_global', n:'Faveur des Valar',    d:'+6% à TOUT / niv',     ico:'☀', base:50000,   g:1.30, eff:'all',  v:0.06, tier:'end'},
+  {id:'h_aura',   n:'Aura d\'Eru Ilúvatar',d:'+8% à TOUT / niv',    ico:'💫', base:500000,  g:1.35, eff:'all',  v:0.08, tier:'end'},
+];
+
+const TIER_LABELS = {
+  early: {label:'🌱 L\'Aube du Héros',   cls:'tier-early', desc:'Or de Comté · Peu coûteux'},
+  mid:   {label:'⚔ L\'Âge des Guerres', cls:'tier-mid',   desc:'Or de Moria · Puissances intermédiaires'},
+  late:  {label:'🔮 La Magie Ancienne',  cls:'tier-late',  desc:'Or de Gondor · Formidables'},
+  end:   {label:'☀ La Grâce des Valar', cls:'tier-end',   desc:'Or du Destin · Absolues'},
+};
+
+/* INCOME — paliers bien séparés */
+const INCOME = [
+  {id:'base',    n:'Glaneur',          d:'Or passif de base.',                   ico:'🌾', base:25,         g:1.20, yield:20,      tier:'early'},
+  {id:'tavern',  n:'Taverne du Poney', d:'Petite auberge — Or passif solide.',    ico:'🍺', base:2500,       g:1.25, yield:400,     tier:'mid'},
+  {id:'mine',    n:'Mine de Fer',      d:'Extraction intensive — grande source.', ico:'⛏', base:150000,     g:1.30, yield:8500,    tier:'late'},
+  {id:'tribute', n:'Tribut Royal',     d:'Impôt du Royaume — Or massif.',        ico:'👑', base:10000000,   g:1.35, yield:250000,  tier:'end'},
+];
+
+/* ---- PASSIVES (Affinités) — même système de rareté que l'équipement ---- */
+const PASSIVE_TIER_KEYS = ['common','uncommon','rare','epic','legendary','mythic'];
+const PASSIVE_POOL = {
+  common: [
+    {n:'Souffle Régulier',     d:'+5% régénération de PV',           eff:'regen', v:0.05},
+    {n:'Pas Légers',           d:'+5% vitesse d\'attaque',            eff:'atk',   v:0.05},
+    {n:'Poches Profondes',     d:'+8% Or gagné',                      eff:'gold',  v:0.08},
+    {n:'Esprit Vif',           d:'+8% XP gagnée',                     eff:'xp',    v:0.08},
+  ],
+  uncommon: [
+    {n:'Lame Affûtée',         d:'+10% dégâts',                       eff:'dmg',   v:0.10},
+    {n:'Peau de Pierre',       d:'+12% PV max',                       eff:'hp',    v:0.12},
+    {n:'Œil du Marchand',      d:'+15% Or gagné',                     eff:'gold',  v:0.15},
+    {n:'Canal d\'Essence',     d:'+15% Essence gagnée',               eff:'ess',   v:0.15},
+  ],
+  rare: [
+    {n:'Frénésie du Combat',   d:'+18% dégâts, +8% vit. attaque',     eff:'dmg_atk', v:0.18, v2:0.08},
+    {n:'Vitalité Ancienne',    d:'+20% PV max, +10% régen',           eff:'hp_regen', v:0.20, v2:0.10},
+    {n:'Chance du Voyageur',   d:'+20% chance de drop',               eff:'drop',  v:0.20},
+    {n:'Bourse Royale',        d:'+25% Or, +10% Essence',             eff:'gold_ess', v:0.25, v2:0.10},
+  ],
+  epic: [
+    {n:'Furie Sanguinaire',    d:'+35% dégâts, +5% chance de coup spécial', eff:'dmg_special', v:0.35, v2:0.05},
+    {n:'Bouclier de Lumière',  d:'+35% PV max, +20% régen',           eff:'hp_regen', v:0.35, v2:0.20},
+    {n:'Sagesse d\'Istari',    d:'+30% Essence, +20% XP',             eff:'ess_xp', v:0.30, v2:0.20},
+    {n:'Avarice du Dragon',    d:'+40% Or, +15% chance de drop',      eff:'gold_drop', v:0.40, v2:0.15},
+  ],
+  legendary: [
+    {n:'Cœur de Vaillance',    d:'+60% dégâts, +25% PV max',          eff:'dmg_hp', v:0.60, v2:0.25},
+    {n:'Bénédiction d\'Eärendil', d:'+50% à TOUT',                    eff:'all',   v:0.50},
+    {n:'Pacte des Ombres',     d:'+10% chance de coup spécial, +30% dégâts spéciaux', eff:'special_combo', v:0.10, v2:0.30},
+  ],
+  mythic: [
+    {n:'Volonté d\'Eru Ilúvatar', d:'+100% à TOUT',                   eff:'all',   v:1.00},
+    {n:'Cœur du Silmaril',     d:'+80% dégâts, +50% PV max, +30% Or', eff:'silmaril', v:0.80, v2:0.50, v3:0.30},
+  ],
+};
+function passiveTierColor(t){ return getTierColor(t); }
+function passiveTierName(t){ return EQUIP_TIERS[t]; }
+
+/* ---- BOSSES — apparaissent toutes les 10 étapes ---- */
+const BOSSES = [
+  {n:'Le Roi-Sorcier',   ico:'👁',  hpMult:6, dmgMult:1.4},
+  {n:'Le Balrog',        ico:'🔥',  hpMult:8, dmgMult:1.6},
+  {n:'Shelob',           ico:'🕷',  hpMult:7, dmgMult:1.5},
+  {n:'Le Nazgûl Pâle',   ico:'☠',  hpMult:9, dmgMult:1.7},
+  {n:'Sauron l\'Œil',    ico:'🔺',  hpMult:12,dmgMult:2.0},
+];
+
+/* ---- RANDOM EVENTS ---- */
+const EVENTS = [
+  {n:'Marchand Errant', ico:'🧙', txt:'Un marchand mystérieux te propose un échange équitable.', karma:1,
+    apply:()=>{ S.gold += S.stage*50*getMult('gold'); }, rewardTxt:s=>`+${fmt(S.stage*50*getMult('gold'))} Or`},
+  {n:'Vol au Marché', ico:'🃏', txt:'Tu cèdes à la tentation et voles un voyageur sans défense.', karma:-1,
+    apply:()=>{ S.gold += S.stage*80*getMult('gold'); }, rewardTxt:s=>`+${fmt(S.stage*80*getMult('gold'))} Or (Corruption +)`},
+  {n:'Sanctuaire Caché', ico:'⛩', txt:'Tu découvres un sanctuaire ancien empli d\'Essence pure.', karma:1,
+    apply:()=>{ S.essence += S.stage*5*getMult('ess'); }, rewardTxt:s=>`+${fmt(S.stage*5*getMult('ess'))} Essence`},
+  {n:'Pacte Obscur', ico:'🩸', txt:'Une voix dans l\'ombre t\'offre du pouvoir... à un prix.', karma:-2,
+    apply:()=>{ S.essence += S.stage*8*getMult('ess'); }, rewardTxt:s=>`+${fmt(S.stage*8*getMult('ess'))} Essence (Corruption ++)`},
+  {n:'Acte de Bravoure', ico:'🕊', txt:'Tu sauves un village assiégé sans rien demander en retour.', karma:2,
+    apply:()=>{ S.glory += Math.ceil(S.stage/2); }, rewardTxt:s=>`+${Math.ceil(S.stage/2)} Gloire`},
+  {n:'Relique Trouvée', ico:'💎', txt:'Un coffre oublié contient une relique étincelante.', karma:0,
+    apply:()=>{ rollDrop(true); }, rewardTxt:s=>'Objet potentiel !'},
+];
+const EVENT_CHANCE = 0.015; // chance par kill
+const LEGACY_TREE = [
+  {id:'l_stats', n:'Héritage Martial',     d:'+10 toutes stats / niv',       cost:1,  g:1.5, max:20, ico:'⚔'},
+  {id:'l_dmg',   n:'Sang de Héros',        d:'+25% dégâts permanents / niv', cost:2,  g:1.8, max:20, ico:'🔥'},
+  {id:'l_xp',    n:'Lumière d\'Eärendil',  d:'+30% XP permanent / niv',      cost:3,  g:1.8, max:15, ico:'🌟'},
+  {id:'l_drop',  n:'Œil du Dragon',        d:'+10% chance de drop / niv',    cost:5,  g:2.0, max:10, ico:'💎'},
+  {id:'l_gold',  n:'Coffres de Thorin',    d:'+20% Or permanent / niv',      cost:4,  g:1.9, max:15, ico:'🪙'},
+  {id:'l_ess',   n:'Source des Elfes',     d:'+15% Essence / niv',           cost:3,  g:1.7, max:15, ico:'✦'},
+];
+
+/* Legacy milestone rewards based on level at rebirth */
+const LEGACY_MILESTONES = [
+  {lvl:50,  pts:1,   label:'Niv. 50 — 1 🜲',     badge:'legacy-tier-1', desc:'L\'éveil du héros'},
+  {lvl:75,  pts:5,   label:'Niv. 75 — 5 🜲',     badge:'legacy-tier-2', desc:'Le sentier de guerre'},
+  {lvl:100, pts:15,  label:'Niv. 100 — 15 🜲',   badge:'legacy-tier-3', desc:'La légende commence'},
+  {lvl:150, pts:40,  label:'Niv. 150 — 40 🜲',   badge:'legacy-tier-4', desc:'L\'épopée éternelle'},
+  {lvl:200, pts:100, label:'Niv. 200 — 100 🜲',  badge:'legacy-tier-5', desc:'L\'ascension divine'},
+  {lvl:300, pts:300, label:'Niv. 300 — 300 🜲',  badge:'legacy-tier-5', desc:'La transcendance'},
+];
+
+/* ---------- STATE ---------- */
+let S = null;
+function defaultState() {
+  return {
+    created:false, name:'Héros', race:'man', cls:'warrior', playstyle:0,
+    level:1, xp:0,
+    stats:{force:10,agility:10,wisdom:10,courage:10},
+    hp:100, maxHp:100,
+    gold:0, essence:0, glory:0, legacy:0,
+    corruption:0, karma:0,
+    stage:1, regionIdx:0, enemyIdx:0, kills:0,
+    enemyHp:10, enemyMaxHp:10,
+    income:{}, upgrades:{},
+    equip:{}, legacyNodes:{},
+    rebirthCount:0, highestLevel:1,
+    passives:[], // {tier, name, eff, v, v2, v3}
+    isBoss:false, isNazgul:false,
+    musicVol:0.32, sfxVol:0.8,
+    totalDmgDealt:0, totalGoldEarned:0, totalKills:0, eventsCount:0,
+    lastSave:Date.now()
+  };
+}
+function initFresh() {
+  S = defaultState();
+  INCOME.forEach(i => S.income[i.id]=0);
+  UPGRADES.forEach(u => S.upgrades[u.id]=0);
+  EQUIP_SLOTS.forEach(e => S.equip[e.id]={tier:-1, power:0, name:'Aucun équipement'});
+  LEGACY_TREE.forEach(l => S.legacyNodes[l.id]=0);
+}
+
+/* ---------- SAVE / LOAD ---------- */
+const SAVE_KEY = 'lotr_idle_save_v3';
+function save() { try{ S.lastSave=Date.now(); localStorage.setItem(SAVE_KEY,JSON.stringify(S)); }catch(e){} }
+function load() {
+  try {
+    let str = localStorage.getItem(SAVE_KEY);
+    if(!str) return false;
+    let d = JSON.parse(str);
+    if(!d || !d.created) return false;
+    S = Object.assign(defaultState(), d);
+    INCOME.forEach(i=>{if(S.income[i.id]==null)S.income[i.id]=0});
+    UPGRADES.forEach(u=>{if(S.upgrades[u.id]==null)S.upgrades[u.id]=0});
+    EQUIP_SLOTS.forEach(e=>{if(!S.equip[e.id])S.equip[e.id]={tier:-1,power:0,name:'Aucun équipement'}});
+    LEGACY_TREE.forEach(l=>{if(S.legacyNodes[l.id]==null)S.legacyNodes[l.id]=0});
+    if(S.rebirthCount==null)S.rebirthCount=0;
+    if(S.highestLevel==null)S.highestLevel=S.level;
+    if(S.passives==null)S.passives=[];
+    if(S.isBoss==null)S.isBoss=false;
+    if(S.isNazgul==null)S.isNazgul=false;
+    if(S.musicVol==null)S.musicVol=0.32;
+    if(S.sfxVol==null)S.sfxVol=0.8;
+    if(S.totalDmgDealt==null)S.totalDmgDealt=0;
+    if(S.totalGoldEarned==null)S.totalGoldEarned=0;
+    if(S.totalKills==null)S.totalKills=S.kills||0;
+    if(S.eventsCount==null)S.eventsCount=0;
+    return true;
+  } catch(e) { return false; }
+}
+
+/* ---------- UTILS ---------- */
+const $ = s => document.querySelector(s);
+const ce = (t,c) => { const e=document.createElement(t); if(c)e.className=c; return e; };
+function fmt(n) {
+  if(n < 1000) return Math.floor(n).toString();
+  const suf = ['','K','M','B','T','Qa','Qi'];
+  let t = Math.floor(Math.log10(n)/3);
+  if(t < suf.length) return (n/Math.pow(10,t*3)).toFixed(2)+suf[t];
+  return n.toExponential(2);
+}
+function xpNeeded(lv) { return Math.floor(100*Math.pow(1.25,lv-1)); }
+
+/* Cost math */
+function getCost(base, g, currentLvl, amount) {
+  let cost = 0, tempLvl = currentLvl;
+  for(let i=0;i<amount;i++) { cost += base * Math.pow(g, tempLvl); tempLvl++; }
+  return cost;
+}
+function getMaxAffordable(base, g, currentLvl, resource) {
+  let count=0, cost=0, tempLvl=currentLvl;
+  while(true) {
+    let next = base * Math.pow(g, tempLvl);
+    if(cost+next > resource) break;
+    cost+=next; tempLvl++; count++;
+    if(count > 5000) break;
+  }
+  return {count, cost};
+}
+
+/* ---------- COMPUTED STATS ---------- */
+function upSum(eff) { let f=1; UPGRADES.forEach(u=>{if(u.eff===eff)f+=u.v*(S.upgrades[u.id]||0);}); return f; }
+function upStat(stat) { let s=0; UPGRADES.forEach(u=>{if(u.eff==='stat'&&u.stat===stat)s+=u.v*(S.upgrades[u.id]||0)}); return s; }
+function legLvl(id) { return S.legacyNodes[id]||0; }
+
+/* ---- PASSIVE EFFECT AGGREGATION ---- */
+function passiveSum(...effs) {
+  let total = 0;
+  S.passives.forEach(p => {
+    effs.forEach((eff, i) => {
+      if(i===0 && p.eff===eff) total += p.v;
+      // composite effects map v2/v3 to second/third listed eff name
+    });
+    // handle composite effect keys (eff_eff2 style) by checking each sub-key
+    let parts = p.eff.split('_');
+    parts.forEach((part, idx) => {
+      effs.forEach(eff => {
+        if(part===eff && parts.length>1) {
+          let val = idx===0 ? p.v : (idx===1 ? p.v2 : p.v3);
+          if(val) total += val;
+        }
+      });
+    });
+    if(p.eff==='all') effs.forEach(eff=>{ if(['dmg','hp','gold','xp','ess','atk','drop','regen'].includes(eff)) total += p.v; });
+  });
+  return total;
+}
+function getMult(key) {
+  let m=1;
+  if(key==='gold') m *= RACES[S.race].goldMult * upSum('gold') * (1+0.20*legLvl('l_gold'));
+  if(key==='xp')   m *= RACES[S.race].xpMult * upSum('xp') * (1+0.30*legLvl('l_xp'));
+  if(key==='glory') m *= RACES[S.race].gloryMult;
+  if(key==='ess')  m *= upSum('ess') * (1+0.15*legLvl('l_ess'));
+  if(key==='idle') m *= RACES[S.race].idleMult;
+  m *= RACES[S.race].allMult * upSum('all');
+  if(key==='drop') m *= (RACES[S.race].dropMult||1) * (1+0.10*legLvl('l_drop'));
+  // Passives
+  if(['dmg','hp','gold','xp','ess','atk','drop','regen'].includes(key)) {
+    m *= (1 + passiveSum(key));
+  }
+  // Nazgûl corruption transformation bonus: massive damage, but Or & XP penalized (dark power)
+  if(S.isNazgul) {
+    if(key==='dmg') m *= 2.5;
+    if(key==='gold') m *= 0.6;
+    if(key==='xp') m *= 0.6;
+  }
+  return m;
+}
+function getStat(stat) {
+  let v = 10 + legLvl('l_stats')*10 + upStat(stat);
+  if(CLASSES[S.cls].primary === stat) v *= CLASSES[S.cls].mult;
+  return Math.floor(v);
+}
+function getDmg() {
+  let dmg = getStat(CLASSES[S.cls].primary) * 2;
+  dmg *= upSum('dmg') * (1+0.25*legLvl('l_dmg')) * getMult('dmg');
+  let wp = S.equip.weapon;
+  if(wp.tier >= 0) dmg *= (1 + wp.power * 0.05);
+  return Math.floor(dmg);
+}
+function getMaxHp() {
+  let hp = 100 + getStat('courage')*10;
+  hp *= upSum('hp') * getMult('hp');
+  let ar = S.equip.armor;
+  if(ar.tier >= 0) hp *= (1 + ar.power * 0.05);
+  if(S.isNazgul) hp *= 1.5;
+  return Math.floor(hp);
+}
+function getAtkSpeed() {
+  let spd = CLASSES[S.cls].atkSpeed * upSum('atk') * getMult('atk');
+  let bo = S.equip.boots;
+  if(bo.tier >= 0) spd *= (1 + bo.power * 0.02);
+  return spd;
+}
+function getHpRegenMult() {
+  return CLASSES[S.cls].hpRegen * getMult('regen');
+}
+function getIdleIncome() {
+  let inc=0;
+  INCOME.forEach(i => inc += (S.income[i.id]||0) * i.yield);
+  return inc * getMult('idle') * getMult('gold');
+}
+
+/* ---------- COMBAT & DROPS ---------- */
+function enemyMaxHp() {
+  let base = Math.floor(15 * Math.pow(1.18, S.stage-1));
+  if(S.isBoss) {
+    let boss = BOSSES[Math.floor((S.stage/10 - 1)) % BOSSES.length];
+    base = Math.floor(base * boss.hpMult);
+  }
+  return base;
+}
+function spawnEnemy() {
+  S.isBoss = (S.stage % 10 === 0);
+  S.enemyMaxHp = enemyMaxHp();
+  S.enemyHp = S.enemyMaxHp;
+  if(S.isBoss) {
+    S.enemyIdx = -1; // marker for boss
+  } else {
+    S.enemyIdx = Math.floor(Math.random() * ENEMIES.length);
+  }
+  renderCombatFace();
+}
+function currentEnemy() {
+  if(S.isBoss) {
+    let idx = Math.floor((S.stage/10 - 1)) % BOSSES.length;
+    return BOSSES[idx];
+  }
+  return ENEMIES[S.enemyIdx];
+}
+function heroAttack() {
+  let dmg = getDmg();
+  let crit = Math.random() < 0.15;
+  let special = Math.random() < (0.06 + passiveSum('special')*0.5);
+  if(crit) dmg = Math.floor(dmg * 1.5);
+  if(special) {
+    let specialMult = 2 + passiveSum('special')*1.5; // base x2, more with passives
+    dmg = Math.floor(dmg * specialMult);
+  }
+  S.enemyHp -= dmg;
+  S.totalDmgDealt = (S.totalDmgDealt||0) + dmg;
+  floatText(fmt(dmg), crit, special);
+  playAttackAnim(crit, special);
+  if(special) { AudioEngine.playSpecial(); } else { AudioEngine.playSwing(); AudioEngine.playHit(crit); }
+  if(S.enemyHp <= 0) enemyDie(); else renderBars();
+}
+
+/* ---- COMBAT VISUAL FX ---- */
+function playAttackAnim(crit, special) {
+  let face = $('#panel-combat .combatface');
+  if(!face) return;
+  let heroF  = face.querySelector('.fighter:first-child');
+  let enemyF = face.querySelector('.fighter:last-child');
+  if(heroF) {
+    heroF.classList.remove('attack-anim','special-anim');
+    void heroF.offsetWidth;
+    heroF.classList.add(special ? 'special-anim' : 'attack-anim');
+  }
+  if(enemyF) {
+    let cls = special ? 'special-hit' : (crit ? 'crit-shake' : 'hit-shake');
+    enemyF.classList.remove('hit-shake','crit-shake','special-hit');
+    void enemyF.offsetWidth; enemyF.classList.add(cls);
+  }
+  if(special) {
+    let beam = face.querySelector('.spellbeam');
+    if(beam) { beam.classList.remove('go'); void beam.offsetWidth; beam.classList.add('go'); }
+  } else {
+    let slash = face.querySelector('.slash');
+    if(slash) {
+      slash.classList.remove('go','crit'); void slash.offsetWidth;
+      if(crit) slash.classList.add('crit');
+      slash.classList.add('go');
+    }
+  }
+  if(crit || special) {
+    let app = $('#app');
+    app.classList.remove('screen-shake'); void app.offsetWidth; app.classList.add('screen-shake');
+  }
+}
+
+/* ---- RICH DROP SYSTEM ---- */
+function rollDrop(forceRoll) {
+  let dropChance = 0.06 * getMult('drop');
+  if(!forceRoll && Math.random() > dropChance) return;
+
+  let slotObj = EQUIP_SLOTS[Math.floor(Math.random() * EQUIP_SLOTS.length)];
+  let slot = slotObj.id;
+
+  // Weighted rarity roll — scales slightly with stage
+  let r = Math.random();
+  let stageBias = Math.min(S.stage / 500, 0.1); // up to +10% better tier at stage 500
+  if(S.isBoss) stageBias += 0.08; // bosses drop better loot
+  let tier = 0;
+  if(r > 0.99  - stageBias) tier = 5;      // Mythic
+  else if(r > 0.93 - stageBias) tier = 4;  // Legendary
+  else if(r > 0.78 - stageBias) tier = 3;  // Epic
+  else if(r > 0.52 - stageBias) tier = 2;  // Rare
+  else if(r > 0.22 - stageBias) tier = 1;  // Uncommon
+  else tier = 0;                            // Common
+
+  let power = Math.floor(S.stage * EQUIP_MULT[tier] * (0.8 + Math.random()*0.4));
+  if(power <= 0) power = 1;
+
+  // Pick a unique name
+  let tierKey = EQUIP_TIER_KEYS[tier];
+  let namePool = ITEM_NAMES[slot][tierKey];
+  let itemName = namePool[Math.floor(Math.random()*namePool.length)];
+
+  if(power > (S.equip[slot].power || 0)) {
+    let old = S.equip[slot];
+    S.equip[slot] = {tier, power, name:itemName};
+    logDrop(`⚔ Équipé : "${itemName}" [${EQUIP_TIERS[tier]}] · Puissance ${fmt(power)}`, tier);
+    AudioEngine.playDrop(tier);
+    if(tier >= 4) toastDrop(`✨ ${EQUIP_TIERS[tier]} obtenu : "${itemName}" !`, tier);
+    S.maxHp = getMaxHp();
+    refreshTab('equipment');
+  } else {
+    let scrap = power * 10 * getMult('gold');
+    S.gold += scrap;
+    logDrop(`↩ Recyclé : "${itemName}" [${EQUIP_TIERS[tier]}] → ${fmt(scrap)} Or`, tier);
+    AudioEngine.playCoin();
+  }
+}
+
+function logDrop(msg, tier) {
+  let p = $('#droplog');
+  if(!p) return;
+  let d = ce('div');
+  d.innerText = msg;
+  d.style.color = getTierColor(tier);
+  if(tier >= 4) d.style.fontWeight = 'bold';
+  p.prepend(d);
+  if(p.children.length > 10) p.removeChild(p.lastChild);
+}
+function toastDrop(msg, tier) {
+  let t = ce('div', tier >= 5 ? 'toast legendary-drop' : 'toast drop');
+  t.innerText = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(()=>t.remove(), 4500);
+  if(tier >= 4) {
+    let burst = ce('div', 'legendary-burst go' + (tier >= 5 ? ' mythic' : ''));
+    document.body.appendChild(burst);
+    setTimeout(()=>burst.remove(), 1300);
+  }
+}
+function getTierColor(t) {
+  const c=['#b9c2d0','#6fd17a','#5fa8e0','#b06fe0','#e8c170','#ff6b88'];
+  return c[t] ?? c[0];
+}
+
+function enemyDie() {
+  S.kills++;
+  S.totalKills = (S.totalKills||0)+1;
+  let goldGain = (S.isBoss ? 25 : 5) * S.stage * getMult('gold');
+  S.gold += goldGain;
+  S.totalGoldEarned = (S.totalGoldEarned||0) + goldGain;
+  S.xp += (S.isBoss ? 100 : 20) * Math.pow(1.12, S.stage-1) * getMult('xp');
+  let helmetBonus = S.equip.helmet.tier >= 0 ? (1 + S.equip.helmet.power * 0.01) : 1;
+  S.xp *= helmetBonus;
+  S.essence += Math.random() < 0.3 ? S.stage * getMult('ess') * (S.isBoss?3:1) : 0;
+  if(S.isBoss) {
+    S.glory += Math.ceil(S.stage/5);
+    rollDrop(true); // bosses guarantee a drop
+    toast(`👑 ${currentEnemy().n} vaincu ! Récompenses de boss obtenues.`);
+  }
+  AudioEngine.playEnemyDeath();
+  AudioEngine.playCoin();
+  rollDrop();
+  while(S.xp >= xpNeeded(S.level)) levelUp();
+  if(S.kills % 10 === 0) advanceStage();
+  // Random event check
+  if(!S.isBoss && Math.random() < EVENT_CHANCE * (RACES[S.race].posEvent||1)) {
+    triggerRandomEvent();
+  }
+  triggerEnemyDeathThenSpawn();
+  renderTop();
+  renderKarmaCorruption();
+}
+function triggerEnemyDeathThenSpawn() {
+  let face = $('#panel-combat .combatface');
+  let enemyF = face ? face.querySelector('.fighter:last-child') : null;
+  if(enemyF) {
+    enemyF.classList.remove('hit-shake','crit-shake','special-hit');
+    enemyF.classList.add('death-anim');
+    setTimeout(()=>{
+      spawnEnemy();
+      let nf = $('#panel-combat .combatface .fighter:last-child');
+      if(nf) { nf.classList.remove('death-anim'); void nf.offsetWidth; nf.classList.add('spawn-anim'); }
+    }, 300);
+  } else {
+    spawnEnemy();
+  }
+}
+function advanceStage() {
+  S.stage++;
+  S.regionIdx = Math.min(REGIONS.length-1, Math.floor(S.stage/10));
+}
+function levelUp() {
+  S.xp -= xpNeeded(S.level);
+  S.level++;
+  if(S.level > (S.highestLevel||1)) S.highestLevel = S.level;
+  S.maxHp = getMaxHp();
+  S.hp = S.maxHp;
+  toast('Niveau ' + S.level + ' atteint !');
+  AudioEngine.playLevelUp();
+  showLevelUpFx(S.level);
+  renderHero();
+}
+function showLevelUpFx(lvl) {
+  let burst = ce('div','levelup-burst go');
+  document.body.appendChild(burst);
+  setTimeout(()=>burst.remove(), 1050);
+  let banner = ce('div','levelup-banner go');
+  banner.innerText = `✦ NIVEAU ${lvl} ✦`;
+  document.body.appendChild(banner);
+  setTimeout(()=>banner.remove(), 1850);
+}
+
+/* ---------- LEGACY FORMULA ---------- */
+function calcLegacyPoints(lvl) {
+  if(lvl < 50) return 0;
+  // Base formula: 1pt at 50, then grows exponentially
+  let pts = Math.floor(Math.pow((lvl - 49) / 1, 1.4));
+  // Milestone bonuses
+  LEGACY_MILESTONES.forEach(m => { if(lvl >= m.lvl) pts = Math.max(pts, m.pts); });
+  return pts;
+}
+
+/* ---------- REBIRTH ---------- */
+window.rebirth = function() {
+  if(S.level < 50) return;
+  let pts = calcLegacyPoints(S.level);
+  if(!confirm(`Renaître ? Tu perdras tout sauf ton Héritage.\nTu gagneras ${fmt(pts)} 🜲 (Niveau actuel: ${S.level}).`)) return;
+  let leg = S.legacy + pts;
+  let legNodes = Object.assign({}, S.legacyNodes);
+  let rc = (S.rebirthCount||0) + 1;
+  let hl = S.highestLevel || S.level;
+  initFresh();
+  S.legacy = leg;
+  S.legacyNodes = legNodes;
+  S.rebirthCount = rc;
+  S.highestLevel = hl;
+  S.created = false;
+  save();
+  AudioEngine.playRebirth();
+  setTimeout(()=>window.location.reload(), 450);
+};
+
+/* ---------- UI UTILS ---------- */
+function floatText(txt, crit, special) {
+  let cls = special ? 'special' : (crit ? 'crit' : '');
+  let f = ce('div','float'+(cls?' '+cls:'')); f.innerText = special ? txt+'✦' : (crit ? txt+'!' : txt);
+  f.style.left = (Math.random()*20+40)+'vw';
+  f.style.top  = (Math.random()*20+30)+'vh';
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(), 1200);
+}
+function toast(msg) {
+  let t = ce('div','toast'); t.innerText = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(()=>t.remove(), 3500);
+}
+
+/* =============================================================
+   AUDIO ENGINE — Effets sonores synthétisés + Musique épique
+   générative façon "Hans Zimmer" (drones, cuivres, percussions,
+   ostinatos de cordes), 100% Web Audio API, sans fichiers externes.
+   ============================================================= */
+const AudioEngine = (() => {
+  let ctx = null, masterGain, musicGain, sfxGain, reverb;
+  let musicMuted = false, sfxMuted = false;
+  let musicVolume = 0.32, sfxVolume = 0.8;
+  let nazgulMode = false;
+  let musicRunning = false;
+  let schedTimer = null, nextNoteTime = 0, beatCount = 0;
+  const BPM = 64;
+  const beatLen = 60 / BPM;
+  // Progression épique en Ré mineur : i - VI - III - VII (Dm - Bb - F - C)
+  const CHORDS = [
+    [73.42, 110.00, 146.83, 220.00],  // D2 A2 D3 A3  (Dm)
+    [58.27, 87.31, 116.54, 174.61],   // Bb1 F2 Bb2 F3 (Bb)
+    [87.31, 130.81, 174.61, 261.63],  // F2 C3 F3 C4  (F)
+    [65.41, 98.00, 130.81, 196.00],   // C2 G2 C3 G3  (C)
+  ];
+  // Progression sombre Nazgûl : ambiance dissonante, registre grave, demi-tons
+  const NAZGUL_CHORDS = [
+    [69.30, 103.83, 138.59, 207.65],  // C#2 Ab2 C#3 Ab3 — sombre
+    [61.74, 92.50, 123.47, 184.99],   // B1 F#2 B2 F#3
+    [58.27, 87.31, 110.00, 174.61],   // Bb1 F2 A2 F3 — tension
+    [55.00, 82.41, 116.54, 164.81],   // A1 E2 Bb2 E3 — résolution dissonante
+  ];
+
+  function ensureCtx() {
+    if(!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = ctx.createGain(); masterGain.gain.value = 1;
+      musicGain  = ctx.createGain(); musicGain.gain.value = musicMuted ? 0 : musicVolume;
+      sfxGain    = ctx.createGain(); sfxGain.gain.value = sfxMuted ? 0 : sfxVolume;
+      reverb = createReverb();
+      musicGain.connect(reverb);
+      sfxGain.connect(reverb);
+      sfxGain.connect(masterGain);
+      reverb.connect(masterGain);
+      masterGain.connect(ctx.destination);
+    }
+    if(ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function createReverb() {
+    const convolver = ctx.createConvolver();
+    const len = Math.floor(ctx.sampleRate * 3);
+    const impulse = ctx.createBuffer(2, len, ctx.sampleRate);
+    for(let ch=0; ch<2; ch++) {
+      const data = impulse.getChannelData(ch);
+      for(let i=0;i<len;i++) data[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2.2);
+    }
+    convolver.buffer = impulse;
+    return convolver;
+  }
+
+  function noiseBuffer(duration) {
+    const size = Math.floor(ctx.sampleRate * duration);
+    const buf = ctx.createBuffer(1, size, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<size;i++) d[i] = Math.random()*2-1;
+    return buf;
+  }
+  function noiseSrc(duration) {
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer(duration);
+    return src;
+  }
+
+  /* ---------------- SFX ---------------- */
+  function playSwing() {
+    if(sfxMuted) return; ensureCtx();
+    const t = ctx.currentTime;
+    const noise = noiseSrc(0.18);
+    const filter = ctx.createBiquadFilter();
+    filter.type='bandpass'; filter.Q.value=1.6;
+    filter.frequency.setValueAtTime(2600, t);
+    filter.frequency.exponentialRampToValueAtTime(500, t+0.16);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+0.18);
+    noise.connect(filter); filter.connect(gain); gain.connect(sfxGain);
+    noise.start(t); noise.stop(t+0.18);
+  }
+  function playHit(crit) {
+    if(sfxMuted) return; ensureCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type='sine';
+    osc.frequency.setValueAtTime(crit?190:120, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t+0.22);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(crit?0.85:0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+0.25);
+    osc.connect(gain); gain.connect(sfxGain);
+    osc.start(t); osc.stop(t+0.25);
+    const noise = noiseSrc(0.08);
+    const filter = ctx.createBiquadFilter();
+    filter.type='highpass'; filter.frequency.value = crit?1400:2400;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(crit?0.45:0.22, t);
+    ng.gain.exponentialRampToValueAtTime(0.001, t+0.08);
+    noise.connect(filter); filter.connect(ng); ng.connect(sfxGain);
+    noise.start(t); noise.stop(t+0.08);
+    if(crit) {
+      const osc2 = ctx.createOscillator();
+      osc2.type='triangle'; osc2.frequency.value=880;
+      const g2 = ctx.createGain();
+      g2.gain.setValueAtTime(0.3, t);
+      g2.gain.exponentialRampToValueAtTime(0.001, t+0.45);
+      osc2.connect(g2); g2.connect(sfxGain); g2.connect(reverb);
+      osc2.start(t); osc2.stop(t+0.45);
+    }
+  }
+  function playEnemyDeath() {
+    if(sfxMuted) return; ensureCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type='sawtooth';
+    osc.frequency.setValueAtTime(320, t);
+    osc.frequency.exponentialRampToValueAtTime(38, t+0.5);
+    const filter = ctx.createBiquadFilter();
+    filter.type='lowpass';
+    filter.frequency.setValueAtTime(2200, t);
+    filter.frequency.exponentialRampToValueAtTime(120, t+0.5);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+0.5);
+    osc.connect(filter); filter.connect(gain); gain.connect(sfxGain);
+    osc.start(t); osc.stop(t+0.5);
+    const noise = noiseSrc(0.3);
+    const nf = ctx.createBiquadFilter(); nf.type='lowpass'; nf.frequency.value=800;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.3, t);
+    ng.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+    noise.connect(nf); nf.connect(ng); ng.connect(sfxGain);
+    noise.start(t); noise.stop(t+0.3);
+  }
+  function playLevelUp() {
+    if(sfxMuted) return; ensureCtx();
+    const t = ctx.currentTime;
+    [261.63, 329.63, 392.00, 523.25, 659.25].forEach((f,i) => {
+      const start = t + i*0.09;
+      const osc = ctx.createOscillator();
+      osc.type='triangle'; osc.frequency.value=f;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.35, start+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start+0.6);
+      osc.connect(gain); gain.connect(sfxGain); gain.connect(reverb);
+      osc.start(start); osc.stop(start+0.6);
+    });
+    const osc2 = ctx.createOscillator();
+    osc2.type='sawtooth'; osc2.frequency.value=130.81;
+    const f2 = ctx.createBiquadFilter(); f2.type='lowpass';
+    f2.frequency.setValueAtTime(200,t);
+    f2.frequency.linearRampToValueAtTime(1400, t+0.5);
+    const g2 = ctx.createGain();
+    g2.gain.setValueAtTime(0,t);
+    g2.gain.linearRampToValueAtTime(0.25, t+0.3);
+    g2.gain.exponentialRampToValueAtTime(0.001, t+1.2);
+    osc2.connect(f2); f2.connect(g2); g2.connect(sfxGain);
+    osc2.start(t); osc2.stop(t+1.2);
+  }
+  function playCoin() {
+    if(sfxMuted) return; ensureCtx();
+    const t = ctx.currentTime;
+    [1318.51, 1567.98].forEach((f,i)=>{
+      const start = t+i*0.07;
+      const osc = ctx.createOscillator();
+      osc.type='square'; osc.frequency.value=f;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.10, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start+0.15);
+      osc.connect(gain); gain.connect(sfxGain);
+      osc.start(start); osc.stop(start+0.15);
+    });
+  }
+  function playDrop(tier) {
+    if(sfxMuted) return; ensureCtx();
+    const t = ctx.currentTime;
+    const baseFreqs = [392, 440, 523.25, 659.25, 783.99, 1046.50];
+    const f = baseFreqs[tier] ?? 392;
+    const count = tier >= 4 ? 4 : (tier >= 2 ? 2 : 1);
+    for(let i=0;i<count;i++) {
+      const start = t + i*0.1;
+      const osc = ctx.createOscillator();
+      osc.type = tier >= 4 ? 'sawtooth' : 'triangle';
+      osc.frequency.value = f * Math.pow(1.5, i);
+      const filter = ctx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=3000;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.25, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start+0.5);
+      osc.connect(filter); filter.connect(gain); gain.connect(sfxGain);
+      if(tier >= 3) gain.connect(reverb);
+      osc.start(start); osc.stop(start+0.5);
+    }
+  }
+  function playSpecial() {
+    if(sfxMuted) return; ensureCtx();
+    const t = ctx.currentTime;
+    // Magic charge-up shimmer
+    [659.25, 880, 1108.73, 1318.51].forEach((f,i)=>{
+      const start = t + i*0.04;
+      const osc = ctx.createOscillator();
+      osc.type='sine'; osc.frequency.setValueAtTime(f*0.5, start);
+      osc.frequency.exponentialRampToValueAtTime(f, start+0.15);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.22, start+0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, start+0.4);
+      osc.connect(gain); gain.connect(sfxGain); gain.connect(reverb);
+      osc.start(start); osc.stop(start+0.4);
+    });
+    // Impact burst
+    const osc = ctx.createOscillator();
+    osc.type='sawtooth';
+    osc.frequency.setValueAtTime(220, t+0.15);
+    osc.frequency.exponentialRampToValueAtTime(50, t+0.5);
+    const filter = ctx.createBiquadFilter();
+    filter.type='lowpass'; filter.frequency.setValueAtTime(2600, t+0.15);
+    filter.frequency.exponentialRampToValueAtTime(200, t+0.5);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.5, t+0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+0.55);
+    osc.connect(filter); filter.connect(gain); gain.connect(sfxGain); gain.connect(reverb);
+    osc.start(t+0.15); osc.stop(t+0.55);
+  }
+  function playClick() {
+    if(sfxMuted) return; ensureCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type='square'; osc.frequency.value=800;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.06, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+0.05);
+    osc.connect(gain); gain.connect(sfxGain);
+    osc.start(t); osc.stop(t+0.05);
+  }
+  function playRebirth() {
+    if(sfxMuted) return; ensureCtx();
+    const t = ctx.currentTime;
+    playPercussion(t, true, sfxGain);
+    [146.83, 174.61, 220.00, 293.66].forEach(f=>{
+      const osc = ctx.createOscillator();
+      osc.type='sawtooth'; osc.frequency.value=f;
+      const filter = ctx.createBiquadFilter(); filter.type='lowpass';
+      filter.frequency.setValueAtTime(200,t);
+      filter.frequency.linearRampToValueAtTime(2000, t+1.5);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0,t);
+      gain.gain.linearRampToValueAtTime(0.18, t+0.8);
+      gain.gain.exponentialRampToValueAtTime(0.001, t+3);
+      osc.connect(filter); filter.connect(gain); gain.connect(sfxGain); gain.connect(reverb);
+      osc.start(t); osc.stop(t+3);
+    });
+    [523.25,659.25,783.99,1046.50,1318.51].forEach((f,i)=>{
+      const start = t+0.3+i*0.12;
+      const osc = ctx.createOscillator();
+      osc.type='triangle'; osc.frequency.value=f;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.25, start+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start+1);
+      osc.connect(gain); gain.connect(sfxGain); gain.connect(reverb);
+      osc.start(start); osc.stop(start+1);
+    });
+  }
+
+  /* ---------------- MUSIQUE GÉNÉRATIVE ÉPIQUE ---------------- */
+  function playPercussion(time, big, bus) {
+    const osc = ctx.createOscillator();
+    osc.type='sine';
+    osc.frequency.setValueAtTime(big?58:78, time);
+    osc.frequency.exponentialRampToValueAtTime(28, time + (big?0.9:0.3));
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(big?0.55:0.18, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time+(big?1.3:0.4));
+    osc.connect(gain); gain.connect(bus);
+    osc.start(time); osc.stop(time+(big?1.3:0.4));
+    const noise = noiseSrc(big?0.6:0.2);
+    const filter = ctx.createBiquadFilter(); filter.type='lowpass';
+    filter.frequency.value = big?900:600;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(big?0.3:0.08, time);
+    ng.gain.exponentialRampToValueAtTime(0.001, time+(big?0.6:0.2));
+    noise.connect(filter); filter.connect(ng); ng.connect(bus); ng.connect(reverb);
+    noise.start(time); noise.stop(time+(big?0.6:0.2));
+  }
+  function playBrassSwell(chord, time, duration) {
+    chord.forEach((f, idx) => {
+      const osc = ctx.createOscillator();
+      osc.type='sawtooth';
+      osc.frequency.value = f;
+      osc.detune.value = (idx%2===0? -4:4);
+      const filter = ctx.createBiquadFilter();
+      filter.type='lowpass';
+      filter.Q.value = 1.2;
+      filter.frequency.setValueAtTime(180, time);
+      filter.frequency.linearRampToValueAtTime(900 - idx*100, time + duration*0.45);
+      filter.frequency.linearRampToValueAtTime(180, time + duration);
+      const gain = ctx.createGain();
+      const vol = idx===0 ? 0.16 : 0.09;
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(vol, time + duration*0.35);
+      gain.gain.setValueAtTime(vol, time + duration*0.6);
+      gain.gain.linearRampToValueAtTime(0, time + duration);
+      osc.connect(filter); filter.connect(gain); gain.connect(musicGain);
+      osc.start(time); osc.stop(time + duration + 0.05);
+    });
+  }
+  function playOstinato(freq, time) {
+    const osc = ctx.createOscillator();
+    osc.type='triangle';
+    osc.frequency.value = freq * (1 + (Math.random()-0.5)*0.002);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.001, time);
+    gain.gain.linearRampToValueAtTime(0.10, time+0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0008, time + beatLen*0.9);
+    osc.connect(gain); gain.connect(musicGain); gain.connect(reverb);
+    osc.start(time); osc.stop(time + beatLen);
+  }
+
+  function scheduleBeat(beat, time) {
+    const cycle = 8; // beats per chord
+    const chordSet = nazgulMode ? NAZGUL_CHORDS : CHORDS;
+    const chordIdx = Math.floor(beat / cycle) % chordSet.length;
+    const chord = chordSet[chordIdx];
+    const pos = beat % cycle;
+    if(pos === 0) playBrassSwell(chord, time, beatLen*cycle);
+    if(pos === 0) playPercussion(time, true, musicGain);
+    if(pos === 4) playPercussion(time, false, musicGain);
+    // Ostinato des cordes — montée/descente sur l'octave de la tierce
+    const top = chord[chord.length-1];
+    const pattern = [top*2, top*2, top*2*1.1892, top*2, top*2, top*2*0.8909, top*2, top*2*1.1892];
+    playOstinato(pattern[pos], time);
+  }
+  function scheduler() {
+    while(nextNoteTime < ctx.currentTime + 0.6) {
+      scheduleBeat(beatCount, nextNoteTime);
+      beatCount++;
+      nextNoteTime += beatLen;
+    }
+    schedTimer = setTimeout(scheduler, 120);
+  }
+  function startMusic() {
+    ensureCtx();
+    if(musicRunning) return;
+    musicRunning = true;
+    beatCount = 0;
+    nextNoteTime = ctx.currentTime + 0.1;
+    scheduler();
+  }
+  function stopMusic() {
+    musicRunning = false;
+    if(schedTimer) clearTimeout(schedTimer);
+    schedTimer = null;
+  }
+  function setMusicMuted(m) {
+    musicMuted = m;
+    if(ctx) musicGain.gain.setTargetAtTime(m?0:musicVolume, ctx.currentTime, 0.15);
+    if(!m) startMusic();
+  }
+  function setSfxMuted(m) {
+    sfxMuted = m;
+    if(ctx) sfxGain.gain.setTargetAtTime(m?0:sfxVolume, ctx.currentTime, 0.05);
+  }
+  function setMusicVolume(v) {
+    musicVolume = v;
+    if(ctx && !musicMuted) musicGain.gain.setTargetAtTime(v, ctx.currentTime, 0.1);
+  }
+  function setSfxVolume(v) {
+    sfxVolume = v;
+    if(ctx && !sfxMuted) sfxGain.gain.setTargetAtTime(v, ctx.currentTime, 0.05);
+  }
+  function setNazgulMode(on) {
+    nazgulMode = on;
+  }
+
+  return {
+    init: ensureCtx,
+    startMusic, stopMusic, setMusicMuted, setSfxMuted, setMusicVolume, setSfxVolume, setNazgulMode,
+    playSwing, playHit, playEnemyDeath, playLevelUp, playCoin, playDrop, playClick, playRebirth, playSpecial,
+    get musicMuted(){return musicMuted;}, get sfxMuted(){return sfxMuted;},
+    get musicVolume(){return musicVolume;}, get sfxVolume(){return sfxVolume;}
+  };
+})();
+
+window.toggleMusic = function() {
+  AudioEngine.setMusicMuted(!AudioEngine.musicMuted);
+  let b = $('#musicBtn');
+  b.classList.toggle('muted', AudioEngine.musicMuted);
+  b.innerText = AudioEngine.musicMuted ? '🔇 Musique' : '🎺 Musique';
+  if(!AudioEngine.musicMuted) AudioEngine.startMusic();
+};
+window.toggleSfx = function() {
+  AudioEngine.setSfxMuted(!AudioEngine.sfxMuted);
+  let b = $('#sfxBtn');
+  b.classList.toggle('muted', AudioEngine.sfxMuted);
+  b.innerText = AudioEngine.sfxMuted ? '🔇 Sons' : '🔔 Sons';
+};
+function startAudio() {
+  AudioEngine.init();
+  AudioEngine.startMusic();
+}
+// Démarre/relance la musique dès la première interaction (autoplay policies)
+['click','touchstart','keydown'].forEach(ev => {
+  document.addEventListener(ev, function once() {
+    startAudio();
+  }, {once:true});
+});
+
+/* ---------- GAME LOOP ---------- */
+let tickCount=0, atkTimer=0, lastRender=0;
+function tick() {
+  let now = Date.now();
+  let dt = (now - lastRender)/1000 || 0;
+  lastRender = now;
+  if(dt>2)dt=2;
+  tickCount++;
+  let idle = getIdleIncome() * dt;
+  if(idle>0) S.gold += idle;
+  if(S.hp < S.maxHp) {
+    S.hp = Math.min(S.maxHp, S.hp + S.maxHp * 0.02 * dt * getHpRegenMult());
+    if(tickCount%5===0) renderBars();
+  }
+  atkTimer += dt;
+  let spd = getAtkSpeed();
+  if(atkTimer >= 1/spd) { atkTimer=0; heroAttack(); }
+  if(tickCount%10===0) renderTop();
+  if(tickCount%50===0) save();
+}
+
+/* ---------- UI RENDERERS ---------- */
+function renderTop() {
+  $('#rGold').innerText    = fmt(S.gold);
+  $('#rEssence').innerText = fmt(S.essence);
+  $('#rGlory').innerText   = fmt(S.glory);
+  $('#rLegacy').innerText  = fmt(S.legacy);
+}
+function renderHero() {
+  $('#heroname').innerText = S.name;
+  $('#tagRace').innerText  = RACES[S.race].name;
+  $('#tagClass').innerText = CLASSES[S.cls].name;
+  $('#tagLvl').innerText   = 'Niv. ' + S.level;
+  let nextXp = xpNeeded(S.level);
+  $('#xpText').innerText   = `${fmt(S.xp)} / ${fmt(nextXp)}`;
+  $('#xpBar').style.width  = `${Math.min(100,(S.xp/nextXp)*100)}%`;
+  renderTop();
+}
+function renderCombatFace() {
+  if(!$('#panel-combat').classList.contains('active')) return;
+  let p = $('#panel-combat');
+  let e = currentEnemy();
+  let bossCls = S.isBoss ? ' boss-face' : '';
+  let bossTag = S.isBoss ? `<div style="text-align:center"><span class="boss-tag">⚔ Combat de Boss ⚔</span></div>` : '';
+  if(!$('#droplog')) {
+    p.innerHTML = `
+      <div class="card">
+        ${bossTag}
+        <div class="sub" style="text-align:center">Région : ${REGIONS[S.regionIdx].n} — Étape ${S.stage}</div>
+        <div class="combatface${bossCls}">
+          <div class="fighter"><div class="av">${S.isNazgul?'☠':RACES[S.race].ico}</div><div class="nm">${S.name}</div><div class="bar herohp"><i id="hHpBar"></i></div></div>
+          <div class="slash"></div>
+          <div class="spellbeam"></div>
+          <div class="vs">VS</div>
+          <div class="fighter"><div class="av">${e.ico}</div><div class="nm">${e.n}</div><div class="bar enemyhp"><i id="eHpBar"></i></div></div>
+        </div>
+        <div class="grid g2" style="margin-top:14px">
+          <div class="statbox"><div class="lab">Dégâts Bruts</div><div class="statval">${fmt(getDmg())}</div></div>
+          <div class="statbox"><div class="lab">Atk/Sec</div><div class="statval">${fmt(getAtkSpeed())}</div></div>
+        </div>
+        <h3 style="margin-top:20px;font-size:14px;margin-bottom:5px;">Registre des Butins</h3>
+        <div id="droplog"></div>
+      </div>`;
+  } else {
+    p.querySelector('.sub').innerText = `Région : ${REGIONS[S.regionIdx].n} — Étape ${S.stage}`;
+    let face = p.querySelector('.combatface');
+    face.classList.toggle('boss-face', !!S.isBoss);
+    let existingTag = p.querySelector('.boss-tag');
+    if(S.isBoss && !existingTag) {
+      p.querySelector('.card').insertAdjacentHTML('afterbegin', `<div style="text-align:center"><span class="boss-tag">⚔ Combat de Boss ⚔</span></div>`);
+    } else if(!S.isBoss && existingTag) {
+      existingTag.parentElement.remove();
+    }
+    p.querySelector('.combatface .fighter:first-child .av').innerText = S.isNazgul ? '☠' : RACES[S.race].ico;
+    p.querySelector('.combatface .fighter:last-child .av').innerText = e.ico;
+    p.querySelector('.combatface .fighter:last-child .nm').innerText = e.n;
+    p.querySelectorAll('.statval')[0].innerText = fmt(getDmg());
+    p.querySelectorAll('.statval')[1].innerText = fmt(getAtkSpeed());
+  }
+  renderBars();
+}
+function renderBars() {
+  if($('#eHpBar')) $('#eHpBar').style.width = `${Math.max(0,(S.enemyHp/S.enemyMaxHp)*100)}%`;
+  if($('#hHpBar')) $('#hHpBar').style.width = `${Math.max(0,(S.hp/getMaxHp())*100)}%`;
+}
+
+/* ---------- KARMA / CORRUPTION ---------- */
+const KARMA_MIN = -100, KARMA_MAX = 100;
+const CORRUPTION_MAX = 100;
+function renderKarmaCorruption() {
+  let kPct = ((S.karma - KARMA_MIN) / (KARMA_MAX - KARMA_MIN)) * 100;
+  kPct = Math.max(0, Math.min(100, kPct));
+  if($('#karmaBar')) $('#karmaBar').style.width = kPct + '%';
+  if($('#karmaVal')) $('#karmaVal').innerText = (S.karma>0?'+':'')+S.karma;
+  let cPct = Math.max(0, Math.min(100, (S.corruption / CORRUPTION_MAX) * 100));
+  if($('#corrBar')) $('#corrBar').style.width = cPct + '%';
+  if($('#corrVal')) $('#corrVal').innerText = Math.floor(cPct) + '%';
+}
+function adjustKarma(delta) {
+  S.karma = Math.max(KARMA_MIN, Math.min(KARMA_MAX, S.karma + delta));
+  // Negative karma slowly raises corruption; positive karma slowly lowers it
+  if(delta < 0) {
+    let resist = RACES[S.race].corruptionResist || 1;
+    S.corruption = Math.min(CORRUPTION_MAX, S.corruption + Math.abs(delta) * 1.5 * resist);
+  } else if(delta > 0 && S.corruption > 0) {
+    S.corruption = Math.max(0, S.corruption - delta * 0.5);
+  }
+  checkNazgulTransformation();
+}
+function checkNazgulTransformation() {
+  let wasNazgul = S.isNazgul;
+  if(S.corruption >= CORRUPTION_MAX && !S.isNazgul) {
+    S.isNazgul = true;
+    activateNazgulMode();
+  } else if(S.corruption < CORRUPTION_MAX && S.isNazgul && S.corruption < CORRUPTION_MAX * 0.5) {
+    // Redemption: corruption drops below half after transformation
+    S.isNazgul = false;
+    deactivateNazgulMode();
+  }
+}
+function activateNazgulMode() {
+  document.body.classList.add('nazgul');
+  toast('☠ La Corruption t\'a consumé... Tu deviens un Nazgûl !');
+  AudioEngine.playRebirth();
+  AudioEngine.setNazgulMode(true);
+  S.name = 'Le ' + S.name;
+  renderHero();
+  if($('#panel-combat').classList.contains('active')) {
+    let droplog = $('#droplog');
+    if(droplog) { droplog.parentElement.remove ? null : null; }
+    $('#panel-combat').innerHTML = '';
+    renderCombatFace();
+  }
+}
+function deactivateNazgulMode() {
+  document.body.classList.remove('nazgul');
+  toast('✦ Ta corruption faiblit... La lumière revient en toi.');
+  AudioEngine.setNazgulMode(false);
+  if(S.name.startsWith('Le ')) S.name = S.name.slice(3);
+  renderHero();
+  if($('#panel-combat').classList.contains('active')) {
+    $('#panel-combat').innerHTML = '';
+    renderCombatFace();
+  }
+}
+
+/* ---------- RANDOM EVENTS ---------- */
+function triggerRandomEvent() {
+  let ev = EVENTS[Math.floor(Math.random()*EVENTS.length)];
+  S.eventsCount = (S.eventsCount||0)+1;
+  ev.apply();
+  if(ev.karma) adjustKarma(ev.karma);
+  renderTop(); renderKarmaCorruption();
+  showEventModal(ev);
+}
+function showEventModal(ev) {
+  let m = $('#eventModal');
+  let c = $('#eventModalContent');
+  c.innerHTML = `
+    <div style="font-size:48px;margin-bottom:10px">${ev.ico}</div>
+    <h3>${ev.n}</h3>
+    <p>${ev.txt}</p>
+    <div class="erewards">${ev.rewardTxt(S)}${ev.karma ? ` · Karma ${ev.karma>0?'+':''}${ev.karma}` : ''}</div>
+    <button class="btn" onclick="closeEventModal()">Continuer</button>`;
+  m.classList.add('show');
+  AudioEngine.playClick();
+}
+window.closeEventModal = function() {
+  $('#eventModal').classList.remove('show');
+};
+
+/* ---------- TABS ---------- */
+const TABS = [
+  {id:'combat',    n:'⚔ Combat'},
+  {id:'upgrades',  n:'📜 Entraînement'},
+  {id:'income',    n:'🏰 Royaume'},
+  {id:'equipment', n:'🛡 Arsenal'},
+  {id:'passives',  n:'🜂 Affinités'},
+  {id:'stats',     n:'📊 Statistiques'},
+  {id:'legacy',    n:'🜲 Héritage'},
+  {id:'audio',     n:'🎛 Audio'},
+];
+function buildTabs() {
+  let t = $('#tabs'); t.innerHTML='';
+  TABS.forEach(tab => {
+    let b = ce('div','tabbtn'); b.dataset.id=tab.id; b.innerText=tab.n;
+    b.onclick = () => switchTab(tab.id);
+    t.appendChild(b);
+  });
+  switchTab('combat');
+}
+function switchTab(id) {
+  AudioEngine.playClick();
+  document.querySelectorAll('.tabbtn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.id===id);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  let p = $(`#panel-${id}`);
+  if(p) p.classList.add('active');
+  refreshTab(id);
+}
+function refreshTab(id) {
+  if(id==='combat')    renderCombatFace();
+  if(id==='upgrades')  renderUpgrades();
+  if(id==='income')    renderIncome();
+  if(id==='equipment') renderEquipment();
+  if(id==='passives')  renderPassives();
+  if(id==='stats')     renderStats();
+  if(id==='legacy')    renderLegacy();
+  if(id==='audio')     renderAudioPanel();
+}
+
+/* ---------- UPGRADES PANEL ---------- */
+function renderUpgrades() {
+  let p = $('#panel-upgrades');
+  let html = `<div class="card"><h3>📜 Améliorations du Héros</h3><div class="sub">Dépense ton Essence pour forger ton destin.</div>`;
+
+  // Group by tier
+  let tiers = ['early','mid','late','end'];
+  tiers.forEach(tier => {
+    let upgs = UPGRADES.filter(u=>u.tier===tier);
+    let tl = TIER_LABELS[tier];
+    html += `<div class="gold-tier-header ${tl.cls}">${tl.label}</div>`;
+    html += `<div style="font-size:11px;color:var(--muted);margin-bottom:8px;margin-left:4px;font-style:italic">${tl.desc}</div>`;
+    upgs.forEach(u => {
+      let lvl = S.upgrades[u.id];
+      let purchase = buyAmount === -1
+        ? getMaxAffordable(u.base, u.g, lvl, S.essence)
+        : {count: Math.max(1,buyAmount), cost: getCost(u.base,u.g,lvl,Math.max(1,buyAmount))};
+      let aff = purchase.count>0 && S.essence >= purchase.cost;
+      html += `
+        <div class="buyrow">
+          <div style="font-size:28px">${u.ico}</div>
+          <div class="info">
+            <div class="nm">${u.n}</div>
+            <div class="ds">${u.d}</div>
+            <div class="lvl">Niv. ${lvl}</div>
+          </div>
+          <div class="act">
+            <button class="btn small ${aff?'':'alt'}" onclick="buyUp('${u.id}')" ${aff?'':'disabled'}>
+              ${purchase.count>0?'+'+purchase.count:'0'} · ${fmt(purchase.cost)} ✦
+            </button>
+          </div>
+        </div>`;
+    });
+  });
+  p.innerHTML = html + `</div>`;
+}
+
+window.buyUp = function(id) {
+  let u = UPGRADES.find(x=>x.id===id);
+  let lvl = S.upgrades[id];
+  let purchase = buyAmount===-1
+    ? getMaxAffordable(u.base,u.g,lvl,S.essence)
+    : {count:Math.max(1,buyAmount), cost:getCost(u.base,u.g,lvl,Math.max(1,buyAmount))};
+  if(purchase.count>0 && S.essence >= purchase.cost) {
+    S.essence -= purchase.cost;
+    S.upgrades[id] += purchase.count;
+    S.maxHp = getMaxHp();
+    AudioEngine.playCoin();
+    refreshTab('upgrades'); renderTop();
+  }
+};
+
+/* ---------- INCOME PANEL ---------- */
+function renderIncome() {
+  let p = $('#panel-income');
+  let html = `<div class="card"><h3>🏰 Bâtiments du Royaume</h3><div class="sub">Construis ton empire pour générer de l'Or passif.</div>`;
+  let tiers = ['early','mid','late','end'];
+  tiers.forEach(tier => {
+    let items = INCOME.filter(i=>i.tier===tier);
+    let tl = TIER_LABELS[tier];
+    html += `<div class="gold-tier-header ${tl.cls}">${tl.label}</div>`;
+    items.forEach(i => {
+      let lvl = S.income[i.id];
+      let purchase = buyAmount===-1
+        ? getMaxAffordable(i.base,i.g,lvl,S.gold)
+        : {count:Math.max(1,buyAmount), cost:getCost(i.base,i.g,lvl,Math.max(1,buyAmount))};
+      let aff = purchase.count>0 && S.gold >= purchase.cost;
+      html += `
+        <div class="buyrow">
+          <div style="font-size:28px">${i.ico}</div>
+          <div class="info">
+            <div class="nm">${i.n}</div>
+            <div class="ds">${i.d} <span style="color:var(--teal-soft)">(${fmt(i.yield)}/s chacun)</span></div>
+            <div class="lvl">Construits : ${lvl} · Total/s : ${fmt(lvl*i.yield)}</div>
+          </div>
+          <div class="act">
+            <button class="btn small ${aff?'':'alt'}" onclick="buyInc('${i.id}')" ${aff?'':'disabled'}>
+              ${purchase.count>0?'+'+purchase.count:'0'} · ${fmt(purchase.cost)} Or
+            </button>
+          </div>
+        </div>`;
+    });
+  });
+  p.innerHTML = html + `</div>`;
+}
+
+window.buyInc = function(id) {
+  let i = INCOME.find(x=>x.id===id);
+  let lvl = S.income[id];
+  let purchase = buyAmount===-1
+    ? getMaxAffordable(i.base,i.g,lvl,S.gold)
+    : {count:Math.max(1,buyAmount), cost:getCost(i.base,i.g,lvl,Math.max(1,buyAmount))};
+  if(purchase.count>0 && S.gold >= purchase.cost) {
+    S.gold -= purchase.cost;
+    S.income[id] += purchase.count;
+    AudioEngine.playCoin();
+    refreshTab('income'); renderTop();
+  }
+};
+
+/* ---------- EQUIPMENT PANEL ---------- */
+function renderEquipment() {
+  let p = $('#panel-equipment');
+  let html = `
+    <div class="card">
+      <h3>🛡 Ton Arsenal</h3>
+      <div class="sub">Les ennemis laissent tomber des reliques. Chaque pièce est unique et nommée.</div>
+      <div class="grid g2">`;
+  EQUIP_SLOTS.forEach(e => {
+    let eq = S.equip[e.id];
+    let hasItem = eq.tier >= 0;
+    let tColor = hasItem ? getTierColor(eq.tier) : 'var(--muted)';
+    let tierName = hasItem ? EQUIP_TIERS[eq.tier] : '—';
+    let rarClass = hasItem ? `r-${EQUIP_TIER_KEYS[eq.tier]}` : '';
+    html += `
+      <div class="slot" style="border-color:${tColor}; ${hasItem && eq.tier>=4 ? 'box-shadow:0 0 15px '+tColor+', inset 0 0 10px rgba(0,0,0,0.6)':''}">
+        <div class="icon">${e.ico}</div>
+        <div class="sname">${e.n}</div>
+        ${hasItem
+          ? `<div class="equip-name">"${eq.name}"</div>
+             <div class="rar ${rarClass}">${tierName}</div>
+             <div class="stat">Puissance: ${fmt(eq.power)}</div>`
+          : `<div class="rar" style="color:var(--muted)">Emplacement vide</div>`
+        }
+        <div style="font-size:11px;margin-top:5px;color:var(--muted)">${e.desc}</div>
+      </div>`;
+  });
+  html += `</div>
+    <div style="margin-top:16px">
+      <h3 style="font-size:14px;margin-bottom:5px;">Registre des Butins Récents</h3>
+      <div id="droplog"></div>
+    </div>
+  </div>`;
+  p.innerHTML = html;
+  // Re-inject droplog entries if they exist in combat
+  let combatLog = document.querySelector('#panel-combat #droplog');
+  // droplog persists in combat panel, equipment panel gets its own clean one
+}
+
+/* ---------- AUDIO SETTINGS PANEL ---------- */
+function renderAudioPanel() {
+  let p = $('#panel-audio');
+  let mPct = Math.round(AudioEngine.musicVolume*100);
+  let sPct = Math.round(AudioEngine.sfxVolume*100);
+  p.innerHTML = `<div class="card">
+    <h3>🎛 Paramètres Audio</h3>
+    <div class="sub">Ajuste l'ambiance sonore de ton aventure.</div>
+    <div class="audio-slider-row">
+      <label>🎺 Volume Musique</label>
+      <input type="range" min="0" max="100" value="${mPct}" oninput="setMusicVolume(this.value)">
+      <span class="pct" id="musicVolPct">${mPct}%</span>
+    </div>
+    <div class="audio-slider-row">
+      <label>🔔 Volume Effets</label>
+      <input type="range" min="0" max="100" value="${sPct}" oninput="setSfxVolume(this.value)">
+      <span class="pct" id="sfxVolPct">${sPct}%</span>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="control-btn" id="musicBtn2" onclick="toggleMusic()" style="flex:1">${AudioEngine.musicMuted?'🔇 Musique (Coupée)':'🎺 Musique (Activée)'}</button>
+      <button class="control-btn" id="sfxBtn2" onclick="toggleSfx()" style="flex:1">${AudioEngine.sfxMuted?'🔇 Effets (Coupés)':'🔔 Effets (Activés)'}</button>
+    </div>
+    <div class="sub" style="margin-top:16px">${S.isNazgul ? '☠ Ambiance Nazgûl active : musique sombre et dissonante.' : '✦ Ambiance épique standard activée.'}</div>
+  </div>`;
+}
+window.setMusicVolume = function(val) {
+  let v = Math.max(0, Math.min(100, parseInt(val))) / 100;
+  S.musicVol = v;
+  AudioEngine.setMusicVolume(v);
+  if($('#musicVolPct')) $('#musicVolPct').innerText = Math.round(v*100)+'%';
+  save();
+};
+window.setSfxVolume = function(val) {
+  let v = Math.max(0, Math.min(100, parseInt(val))) / 100;
+  S.sfxVol = v;
+  AudioEngine.setSfxVolume(v);
+  if($('#sfxVolPct')) $('#sfxVolPct').innerText = Math.round(v*100)+'%';
+  AudioEngine.playClick();
+  save();
+};
+
+/* ---------- STATS PANEL ---------- */
+function renderStats() {
+  let p = $('#panel-stats');
+  let hpPct = Math.max(0, Math.min(100, (S.hp/getMaxHp())*100));
+  p.innerHTML = `<div class="card">
+    <h3>📊 Statistiques du Héros</h3>
+    <div class="sub">Vue d'ensemble de ton pouvoir et de ton parcours.</div>
+
+    <div class="barwrap" style="margin-bottom:16px">
+      <div class="barlabel"><span>Points de Vie</span><span>${fmt(S.hp)} / ${fmt(getMaxHp())}</span></div>
+      <div class="bar herohp" style="height:18px"><i style="width:${hpPct}%"></i></div>
+    </div>
+
+    <div class="grid g4">
+      <div class="statbox"><div class="lab">Force</div><div class="statval">${getStat('force')}</div></div>
+      <div class="statbox"><div class="lab">Agilité</div><div class="statval">${getStat('agility')}</div></div>
+      <div class="statbox"><div class="lab">Sagesse</div><div class="statval">${getStat('wisdom')}</div></div>
+      <div class="statbox"><div class="lab">Courage</div><div class="statval">${getStat('courage')}</div></div>
+    </div>
+
+    <div class="grid g4" style="margin-top:12px">
+      <div class="statbox"><div class="lab">Dégâts</div><div class="statval">${fmt(getDmg())}</div></div>
+      <div class="statbox"><div class="lab">PV Max</div><div class="statval">${fmt(getMaxHp())}</div></div>
+      <div class="statbox"><div class="lab">Atk/Sec</div><div class="statval">${fmt(getAtkSpeed())}</div></div>
+      <div class="statbox"><div class="lab">Régén PV</div><div class="statval">${getHpRegenMult().toFixed(2)}×</div></div>
+    </div>
+
+    <div class="gold-tier-header tier-mid">Progression</div>
+    <div class="grid g4">
+      <div class="statbox"><div class="lab">Niveau</div><div class="statval">${S.level}</div></div>
+      <div class="statbox"><div class="lab">Étape</div><div class="statval">${S.stage}</div></div>
+      <div class="statbox"><div class="lab">Région</div><div class="statval" style="font-size:16px">${REGIONS[S.regionIdx].n}</div></div>
+      <div class="statbox"><div class="lab">Rebirths</div><div class="statval">${S.rebirthCount||0}</div></div>
+    </div>
+
+    <div class="gold-tier-header tier-late">Statistiques cumulées</div>
+    <div class="grid g4">
+      <div class="statbox"><div class="lab">Ennemis tués</div><div class="statval">${fmt(S.totalKills||0)}</div></div>
+      <div class="statbox"><div class="lab">Dégâts totaux</div><div class="statval">${fmt(S.totalDmgDealt||0)}</div></div>
+      <div class="statbox"><div class="lab">Or total gagné</div><div class="statval">${fmt(S.totalGoldEarned||0)}</div></div>
+      <div class="statbox"><div class="lab">Événements</div><div class="statval">${S.eventsCount||0}</div></div>
+    </div>
+
+    <div class="gold-tier-header tier-end">Multiplicateurs Globaux</div>
+    <div class="grid g3">
+      <div class="statbox"><div class="lab">Or</div><div class="statval">${getMult('gold').toFixed(2)}×</div></div>
+      <div class="statbox"><div class="lab">XP</div><div class="statval">${getMult('xp').toFixed(2)}×</div></div>
+      <div class="statbox"><div class="lab">Essence</div><div class="statval">${getMult('ess').toFixed(2)}×</div></div>
+      <div class="statbox"><div class="lab">Dégâts</div><div class="statval">${getMult('dmg').toFixed(2)}×</div></div>
+      <div class="statbox"><div class="lab">Chance de Drop</div><div class="statval">${(getMult('drop')*0.06*100).toFixed(1)}%</div></div>
+      <div class="statbox"><div class="lab">Karma</div><div class="statval" style="color:${S.karma>=0?'var(--good)':'var(--danger)'}">${S.karma>0?'+':''}${S.karma}</div></div>
+    </div>
+  </div>`;
+}
+
+/* ---------- PASSIVES (AFFINITÉS) PANEL ---------- */
+const PASSIVE_REROLL_COST_BASE = 25;
+const PASSIVE_SLOTS_MAX = 3;
+function passiveRerollCost() {
+  return PASSIVE_REROLL_COST_BASE * Math.pow(1.6, S.passives.length);
+}
+function renderPassives() {
+  let p = $('#panel-passives');
+  let cost = Math.floor(passiveRerollCost());
+  let canAfford = S.glory >= cost;
+  let canAdd = S.passives.length < PASSIVE_SLOTS_MAX;
+  let html = `<div class="card">
+    <h3>🜂 Affinités du Héros</h3>
+    <div class="sub">Des dons mystiques, semblables à des reliques, qui façonnent ton destin. Utilise ta <b>Gloire 🏆</b> pour obtenir ou reroller une affinité (max ${PASSIVE_SLOTS_MAX}).</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <button class="btn" style="max-width:360px;margin:0 auto" onclick="rerollPassive()" ${canAfford?'':'disabled'}>
+        ${canAdd ? '✨ Obtenir une Affinité' : '🔄 Reroll une Affinité'} — ${fmt(cost)} 🏆
+      </button>
+    </div>
+    <div class="grid g1">`;
+  if(S.passives.length === 0) {
+    html += `<div class="sub" style="text-align:center">Aucune affinité pour le moment. Dépense ta Gloire pour en débloquer une !</div>`;
+  }
+  S.passives.forEach((pas, idx) => {
+    let color = getTierColor(pas.tier);
+    html += `
+      <div class="passive-card" style="border-color:${color}">
+        <div class="pname r-${PASSIVE_TIER_KEYS[pas.tier]}">${pas.n} <span style="font-size:11px;color:${color}">[${EQUIP_TIERS[pas.tier]}]</span></div>
+        <div class="pdesc">${pas.d}</div>
+        <button class="btn small" onclick="rerollSinglePassive(${idx})" ${S.glory>=cost?'':'disabled'}>Reroll cette affinité — ${fmt(cost)} 🏆</button>
+      </div>`;
+  });
+  html += `</div></div>`;
+  p.innerHTML = html;
+}
+
+function rollRandomPassive() {
+  // Weighted rarity roll similar to equipment
+  let r = Math.random();
+  let tier = 0;
+  if(r > 0.97) tier = 5;
+  else if(r > 0.90) tier = 4;
+  else if(r > 0.75) tier = 3;
+  else if(r > 0.50) tier = 2;
+  else if(r > 0.20) tier = 1;
+  else tier = 0;
+  let pool = PASSIVE_POOL[PASSIVE_TIER_KEYS[tier]];
+  let pick = pool[Math.floor(Math.random()*pool.length)];
+  return {tier, n: pick.n, d: pick.d, eff: pick.eff, v: pick.v, v2: pick.v2, v3: pick.v3};
+}
+window.rerollPassive = function() {
+  let cost = Math.floor(passiveRerollCost());
+  if(S.glory < cost) return;
+  S.glory -= cost;
+  let newPas = rollRandomPassive();
+  if(S.passives.length < PASSIVE_SLOTS_MAX) {
+    S.passives.push(newPas);
+    toast(`🜂 Nouvelle Affinité : ${newPas.n} [${EQUIP_TIERS[newPas.tier]}]`);
+  } else {
+    // Reroll a random existing one
+    let idx = Math.floor(Math.random()*S.passives.length);
+    S.passives[idx] = newPas;
+    toast(`🔄 Affinité changée : ${newPas.n} [${EQUIP_TIERS[newPas.tier]}]`);
+  }
+  AudioEngine.playDrop(newPas.tier);
+  S.maxHp = getMaxHp();
+  refreshTab('passives'); renderTop(); save();
+};
+window.rerollSinglePassive = function(idx) {
+  let cost = Math.floor(passiveRerollCost());
+  if(S.glory < cost) return;
+  S.glory -= cost;
+  let newPas = rollRandomPassive();
+  S.passives[idx] = newPas;
+  toast(`🔄 Affinité changée : ${newPas.n} [${EQUIP_TIERS[newPas.tier]}]`);
+  AudioEngine.playDrop(newPas.tier);
+  S.maxHp = getMaxHp();
+  refreshTab('passives'); renderTop(); save();
+};
+
+/* ---------- LEGACY PANEL ---------- */
+function renderLegacy() {
+  let p = $('#panel-legacy');
+  let canRebirth = S.level >= 50;
+  let pts = calcLegacyPoints(S.level);
+  let rc = S.rebirthCount || 0;
+
+  // Find next milestone
+  let nextMs = LEGACY_MILESTONES.find(m => S.level < m.lvl);
+
+  let html = `<div class="card">
+    <h3>🜲 L'Arbre d'Eru Ilúvatar</h3>
+    <div class="sub">Renais de tes cendres pour gagner un Héritage éternel. Disponible dès le <b>Niveau 50</b>. Plus haut est ton niveau, plus grandes sont les récompenses.</div>
+
+    <!-- Rebirth info box -->
+    <div class="legacy-preview">
+      <h4>🜲 Résumé de l'Héritage</h4>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px;font-size:13px">
+        <span>Points actuels : <b style="color:#c9a0ff">${fmt(S.legacy)} 🜲</b></span>
+        <span>Rebirths : <b style="color:#c9a0ff">${rc}</b></span>
+        <span>Plus haut niveau : <b style="color:#c9a0ff">${S.highestLevel||S.level}</b></span>
+      </div>
+      ${canRebirth
+        ? `<div style="color:var(--gold-bright);font-family:Cinzel;font-size:14px;margin-bottom:8px">
+            Tu gagneras <b style="color:#c9a0ff">+${fmt(pts)} 🜲</b> en renaissant maintenant (Niv. ${S.level}).
+           </div>`
+        : `<div style="color:var(--muted);font-size:13px;margin-bottom:8px">Atteins le <b>Niveau 50</b> pour Renaître.</div>`
+      }
+      <div class="legacy-milestones">
+        ${LEGACY_MILESTONES.map(m => `
+          <span class="legacy-reward-badge ${m.badge}" title="${m.desc}" style="${S.level >= m.lvl ? '' : 'opacity:0.4'}">
+            ${m.label}
+          </span>`).join('')}
+      </div>
+      ${nextMs ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;font-style:italic">
+        Prochain palier : Niveau ${nextMs.lvl} (+${nextMs.pts} 🜲) — "${nextMs.desc}"
+      </div>` : ''}
+    </div>
+
+    <div style="text-align:center;margin-bottom:20px">
+      <button class="btn" style="border-color:#9d62d6;color:#d6a8ff;font-size:16px;padding:15px;max-width:400px"
+        onclick="rebirth()" ${canRebirth?'':'disabled'}>
+        ${canRebirth
+          ? `✨ Renaître — Gagner +${fmt(pts)} 🜲`
+          : `Niv. 50 requis pour Renaître`}
+      </button>
+    </div>
+
+    <div class="grid g2">`;
+
+  LEGACY_TREE.forEach(l => {
+    let lvl = S.legacyNodes[l.id];
+    let c = Math.floor(l.cost * Math.pow(l.g, lvl));
+    let aff = S.legacy >= c && lvl < l.max;
+    let done = lvl >= l.max;
+    html += `
+      <div class="slot ${done?'':''}${lvl>0?'':' legacy-locked'}" style="${lvl>0?'border-color:var(--gold);box-shadow:0 0 10px var(--glow);':''}">
+        <div class="icon">${l.ico}</div>
+        <div class="sname">${l.n}</div>
+        <div class="stat" style="margin:4px 0">${l.d}</div>
+        <div style="font-size:12px;color:var(--teal-soft);font-family:Cinzel;margin-bottom:8px">${lvl} / ${l.max}</div>
+        <button class="btn small" onclick="buyLeg('${l.id}')" ${aff?'':'disabled'}>
+          ${done ? '✓ MAX' : `${c} 🜲`}
+        </button>
+      </div>`;
+  });
+  p.innerHTML = html + `</div></div>`;
+}
+
+window.buyLeg = function(id) {
+  let l = LEGACY_TREE.find(x=>x.id===id);
+  let lvl = S.legacyNodes[id];
+  let c = Math.floor(l.cost * Math.pow(l.g, lvl));
+  if(S.legacy >= c && lvl < l.max) {
+    S.legacy -= c; S.legacyNodes[id]++;
+    AudioEngine.playCoin();
+    refreshTab('legacy'); renderTop(); save();
+  }
+};
+
+/* ---------- PARTICLES ---------- */
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let W,H,parts=[];
+function resize() { W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+window.addEventListener('resize',resize); resize();
+function renderCanvas() {
+  ctx.clearRect(0,0,W,H);
+  if(Math.random()<0.1) {
+    parts.push({x:Math.random()*W,y:H+10,vx:(Math.random()-0.5)*0.5,vy:-Math.random()*1-0.5,life:1,c:'#d4af37'});
+  }
+  for(let i=parts.length-1;i>=0;i--) {
+    let p=parts[i]; p.x+=p.vx; p.y+=p.vy; p.life-=0.005;
+    ctx.globalAlpha=Math.max(0,p.life*0.5); ctx.fillStyle=p.c;
+    ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2); ctx.fill();
+    if(p.life<=0) parts.splice(i,1);
+  }
+  requestAnimationFrame(renderCanvas);
+}
+renderCanvas();
+
+/* ---------- START SCREEN ---------- */
+function initStartScreen() {
+  if(S.created) {
+    $('#start').style.display='none';
+    $('#app').style.display='flex';
+    AudioEngine.setMusicVolume(S.musicVol!=null?S.musicVol:0.32);
+    AudioEngine.setSfxVolume(S.sfxVol!=null?S.sfxVol:0.8);
+    if(S.isNazgul) { document.body.classList.add('nazgul'); AudioEngine.setNazgulMode(true); }
+    renderHero(); buildTabs(); spawnEnemy(); renderKarmaCorruption();
+    setInterval(tick, 100);
+    return;
+  }
+  let rg = $('#raceGrid');
+  Object.keys(RACES).forEach(k=>{
+    let r=RACES[k]; let d=ce('div','choice rchoice'); d.dataset.v=k;
+    d.innerHTML=`<div class="ct">${r.ico} ${r.name}</div><div class="cd">${r.desc}</div>`;
+    d.onclick=()=>{document.querySelectorAll('.rchoice').forEach(x=>x.classList.remove('sel')); d.classList.add('sel'); checkStart();};
+    rg.appendChild(d);
+  });
+  let cg = $('#classGrid');
+  Object.keys(CLASSES).forEach(k=>{
+    let c=CLASSES[k]; let d=ce('div','choice cchoice'); d.dataset.v=k;
+    d.innerHTML=`<div class="ct">${c.ico} ${c.name}</div><div class="cd">${c.desc}</div>`;
+    d.onclick=()=>{document.querySelectorAll('.cchoice').forEach(x=>x.classList.remove('sel')); d.classList.add('sel'); checkStart();};
+    cg.appendChild(d);
+  });
+  $('#nameInput').oninput=checkStart;
+  $('#beginBtn').onclick=startGame;
+}
+function checkStart() {
+  let n=$('#nameInput').value.trim();
+  let r=$('.rchoice.sel'); let c=$('.cchoice.sel');
+  $('#beginBtn').disabled=!(n&&r&&c);
+}
+function startGame() {
+  S.name=$('#nameInput').value.trim();
+  S.race=$('.rchoice.sel').dataset.v;
+  S.cls=$('.cchoice.sel').dataset.v;
+  S.created=true;
+  S.maxHp=getMaxHp(); S.hp=S.maxHp;
+  save(); startAudio(); initStartScreen();
+}
+
+if(!load()) initFresh();
+initStartScreen();
+</script>
+</body>
+</html>
