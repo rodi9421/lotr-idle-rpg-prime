@@ -1885,6 +1885,50 @@ window.addEventListener('keydown',e=>{
   } else if(e.key==='Escape'){ cmdBack(); }
   else if(B.menu==='tech'){ let n=parseInt(k); if(n>=1&&n<=cur.moves.length){ cmdUseTech(cur.moves[n-1]); } }
 });
+   /* ===================================================================
+   [PATCH AUDIO] SÉLECTION DE LA MUSIQUE SELON LE RÔLE
+   =================================================================== */
+window.addEventListener('DOMContentLoaded', () => {
+    // Fichiers audio fournis
+    const THEME_HERO = "The One Ring Theme - Lord of the Rings  EPIC VERSION.mp3";
+    const THEME_NAZGUL = "Nazgul Theme V2  EPIC VERSION (The Lord of the Rings OST  The Rings of Power Soundtrack S2).mp3";
+
+    // On vérifie si l'objet Music existe dans ton code
+    if (typeof Music !== 'undefined') {
+        
+        // On surcharge ta fonction Music.ensure()
+        Music.ensure = function() {
+            // Création de l'élément audio s'il n'existe pas
+            if (!this.audio) {
+                this.audio = new Audio();
+                this.audio.loop = true;
+            }
+
+            // Détermination de la piste selon la variable d'état S.isNazgul
+            const pisteActuelle = (typeof S !== 'undefined' && S.isNazgul) ? THEME_NAZGUL : THEME_HERO;
+
+            // On récupère le nom du fichier en cours de lecture
+            const srcActuelle = decodeURIComponent(this.audio.src);
+
+            // Si la source actuelle n'est pas la bonne, on la met à jour
+            if (!srcActuelle.includes(pisteActuelle)) {
+                this.audio.src = pisteActuelle;
+            }
+
+            // Gestion de la lecture/pause selon les options du joueur
+            if (typeof S !== 'undefined' && S.musicOn) {
+                this.audio.play().catch(err => console.warn("Attente d'interaction de l'utilisateur pour lancer l'audio."));
+            } else {
+                this.audio.pause();
+            }
+        };
+
+        // Si le jeu est déjà chargé, on s'assure que la musique démarre
+        if (typeof S !== 'undefined' && S.musicOn && S.created) {
+            Music.ensure();
+        }
+    }
+});
 </script>
 </body>
 </html>
